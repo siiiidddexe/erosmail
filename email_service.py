@@ -277,16 +277,35 @@ class EmailService:
                     "X-API-Key": api_account.api_key
                 }
                 
+                # Ensure the HTML starts with <!DOCTYPE to prevent NexoMailer's branded template wrapping
                 payload = {
                     "to": to_email,
                     "subject": subject,
                     "app_name": api_account.name
                 }
                 
-                if email_type == "html":
+                # Check if the body already starts with <!DOCTYPE or <html
+                stripped_body = body.strip().lower()
+                if stripped_body.startswith("<!doctype") or stripped_body.startswith("<html"):
                     payload["html"] = body
                 else:
-                    payload["html"] = f"<p>{body}</p>"
+                    formatted_body = body.replace("\n", "<br>") if email_type != "html" else body
+                    payload["html"] = f"""<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 20px; background-color: #f9fafb; color: #1f2937;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 24px; border: 1px solid #e5e7eb; border-radius: 8px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);">
+        <div style="font-size: 16px; line-height: 1.6;">
+            {formatted_body}
+        </div>
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid #f3f4f6; text-align: center; font-size: 12px; color: #9ca3af;">
+            Powered by NexoMailer
+        </div>
+    </div>
+</body>
+</html>"""
                 
                 async with httpx.AsyncClient(timeout=30.0) as client:
                     response = await client.post(
