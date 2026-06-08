@@ -3,153 +3,176 @@
 {% block title %}SMTP Accounts{% endblock %}
 
 {% block content %}
-<div class="px-4 py-6 sm:px-0">
-    <div class="md:grid md:grid-cols-3 md:gap-6">
-        <div class="md:col-span-1">
-            <div class="px-4 sm:px-0">
-                <h3 class="text-lg font-medium leading-6 text-gray-900">SMTP Accounts</h3>
-                <p class="mt-1 text-sm text-gray-600">Manage the SMTP accounts used to send your campaigns.</p>
-            </div>
-        </div>
-        <div class="mt-5 md:mt-0 md:col-span-2">
-            <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
-                <div class="flex">
-                    <div class="ml-3">
-                        <p class="text-sm text-blue-700 font-medium mb-2">Quick SMTP Presets (click to auto-fill):</p>
-                        <div class="flex flex-wrap gap-2">
-                            <button type="button" onclick="fillPreset('hostinger')" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
-                                Hostinger
-                            </button>
-                            <button type="button" onclick="fillPreset('google')" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
-                                Google (Gmail)
-                            </button>
-                            <button type="button" onclick="fillPreset('starwarlt')" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50">
-                                Starwarlt
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+<div class="sm:flex sm:items-center sm:justify-between mb-6">
+    <div>
+        <h1 class="text-2xl font-semibold text-gray-900">SMTP Accounts</h1>
+        <p class="mt-1 text-sm text-gray-500">Manage the SMTP accounts used to send your campaigns.</p>
+    </div>
+</div>
 
-            <form action="/smtp/add" method="POST" class="mb-8" id="smtp-form">
-                <div class="shadow sm:rounded-md sm:overflow-hidden">
-                    <div class="px-4 py-5 bg-white space-y-6 sm:p-6">
-                        <div class="grid grid-cols-6 gap-6">
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="name" class="block text-sm font-medium text-gray-700">Account Name</label>
-                                <input type="text" name="name" id="name" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="host" class="block text-sm font-medium text-gray-700">SMTP Host</label>
-                                <input type="text" name="host" id="host" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="col-span-6 sm:col-span-2">
-                                <label for="port" class="block text-sm font-medium text-gray-700">Port</label>
-                                <input type="number" name="port" id="port" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="col-span-6 sm:col-span-4">
-                                <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
-                                <input type="text" name="username" id="username" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="col-span-6">
-                                <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
-                                <input type="password" name="password" id="password" required class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                            </div>
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="rate_limit_per_hour" class="block text-sm font-medium text-gray-700">Rate Limit (per hour)</label>
-                                <input type="number" name="rate_limit_per_hour" id="rate_limit_per_hour" value="100" min="1" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                                <p class="mt-1 text-xs text-gray-500">Maximum emails per hour</p>
-                            </div>
-                            <div class="col-span-6 sm:col-span-3">
-                                <label for="rate_limit_per_day" class="block text-sm font-medium text-gray-700">Rate Limit (per day)</label>
-                                <input type="number" name="rate_limit_per_day" id="rate_limit_per_day" value="1000" min="1" class="mt-1 focus:ring-indigo-500 focus:border-indigo-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md">
-                                <p class="mt-1 text-xs text-gray-500">Maximum emails per day</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="px-4 py-3 bg-gray-50 text-right sm:px-6">
-                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                            Add Account
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- Left Column: Add Form & Presets -->
+    <div class="lg:col-span-1 space-y-6">
+        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r-md">
+            <div class="flex">
+                <div class="ml-1">
+                    <p class="text-sm text-blue-700 font-semibold mb-2">Quick SMTP Presets (click to auto-fill):</p>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="fillPreset('hostinger')" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors">
+                            Hostinger
+                        </button>
+                        <button type="button" onclick="fillPreset('google')" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors">
+                            Google (Gmail)
+                        </button>
+                        <button type="button" onclick="fillPreset('starwarlt')" class="inline-flex items-center px-3 py-1.5 border border-blue-300 text-xs font-medium rounded-md text-blue-700 bg-white hover:bg-blue-50 transition-colors">
+                            Starwarlt
                         </button>
                     </div>
                 </div>
-            </form>
+            </div>
+        </div>
 
-            <!-- Traditional Table View for Desktop -->
-            <div class="hidden md:block shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Host</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
-                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th scope="col" class="relative px-6 py-3"><span class="sr-only">Edit/Delete</span></th>
-                        </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-200">
-                        {% for account in accounts %}
-                        <tr>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ account.name }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ account.host }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ account.port }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ account.username }}</td>
-                            <td class="px-6 py-4 whitespace-nowrap">
+        <form action="/smtp/add" method="POST" id="smtp-form" class="bg-white shadow sm:rounded-md border border-gray-200 overflow-hidden">
+            <div class="px-4 py-5 space-y-4 sm:p-6">
+                <h3 class="text-lg font-medium text-gray-900 border-b border-gray-100 pb-2">Add SMTP Account</h3>
+                
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Account Name</label>
+                    <input type="text" name="name" id="name" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                </div>
+                
+                <div>
+                    <label for="host" class="block text-sm font-medium text-gray-700">SMTP Host</label>
+                    <input type="text" name="host" id="host" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                </div>
+                
+                <div class="grid grid-cols-3 gap-4">
+                    <div class="col-span-1">
+                        <label for="port" class="block text-sm font-medium text-gray-700">Port</label>
+                        <input type="number" name="port" id="port" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                    </div>
+                    <div class="col-span-2">
+                        <label for="username" class="block text-sm font-medium text-gray-700">Username</label>
+                        <input type="text" name="username" id="username" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                    </div>
+                </div>
+                
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" name="password" id="password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="rate_limit_per_hour" class="block text-sm font-medium text-gray-700">Hourly Limit</label>
+                        <input type="number" name="rate_limit_per_hour" id="rate_limit_per_hour" value="100" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                        <p class="mt-1 text-xs text-gray-500">Max emails/hour</p>
+                    </div>
+                    <div>
+                        <label for="rate_limit_per_day" class="block text-sm font-medium text-gray-700">Daily Limit</label>
+                        <input type="number" name="rate_limit_per_day" id="rate_limit_per_day" value="1000" min="1" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2">
+                        <p class="mt-1 text-xs text-gray-500">Max emails/day</p>
+                    </div>
+                </div>
+
+                <div id="test-status-add" class="hidden text-sm p-3 rounded-md"></div>
+            </div>
+            
+            <div class="px-4 py-3 bg-gray-50 flex justify-end space-x-2 sm:px-6">
+                <button type="button" id="btn-test-add" onclick="testConnection()" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Test Connection
+                </button>
+                <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    Add Account
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Right Column: Table / Cards List -->
+    <div class="lg:col-span-2 space-y-6">
+        <!-- Desktop Table -->
+        <div class="hidden md:block shadow border border-gray-200 sm:rounded-lg overflow-x-auto w-full">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Host</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Port</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Username</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Delete</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {% for account in accounts %}
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ account.name }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ account.host }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ account.port }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ account.username }}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                            <div class="flex items-center space-x-2">
                                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                                     Active
                                 </span>
-                            </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-3">
-                                <a href="/smtp/{{ account.id }}/edit" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                                <form action="/smtp/{{ account.id }}/delete" method="POST" class="inline">
-                                    <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this account?');">Delete</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% else %}
-                        <tr>
-                            <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No SMTP accounts found.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+                                <span id="test-indicator-{{ account.id }}" class="hidden text-xs text-gray-500"></span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                            <button type="button" id="btn-test-{{ account.id }}" onclick="testSavedAccount({{ account.id }})" class="text-green-600 hover:text-green-900 focus:outline-none">Test</button>
+                            <a href="/smtp/{{ account.id }}/edit" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                            <form action="/smtp/{{ account.id }}/delete" method="POST" class="inline">
+                                <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this account?');">Delete</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No SMTP accounts found.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
 
-            <!-- Cards View for Mobile -->
-            <div class="space-y-4 md:hidden">
-                {% for account in accounts %}
-                <div class="bg-white shadow rounded-lg p-4 border border-gray-200">
-                    <div class="flex justify-between items-start mb-2">
-                        <div>
-                            <h4 class="text-sm font-medium text-gray-900">{{ account.name }}</h4>
-                            <p class="text-xs text-gray-500">{{ account.username }}</p>
-                        </div>
+        <!-- Mobile Cards -->
+        <div class="space-y-4 md:hidden">
+            {% for account in accounts %}
+            <div class="bg-white shadow rounded-lg p-4 border border-gray-200">
+                <div class="flex justify-between items-start mb-2">
+                    <div>
+                        <h4 class="text-sm font-medium text-gray-900">{{ account.name }}</h4>
+                        <p class="text-xs text-gray-500">{{ account.username }}</p>
+                    </div>
+                    <div class="flex flex-col items-end space-y-1">
                         <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                             Active
                         </span>
-                    </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2 mb-3">
-                        <div>
-                            <span class="font-medium text-gray-700">Host:</span> {{ account.host }}
-                        </div>
-                        <div>
-                            <span class="font-medium text-gray-700">Port:</span> {{ account.port }}
-                        </div>
-                    </div>
-                    <div class="flex justify-end space-x-3 border-t border-gray-100 pt-2 text-sm font-medium">
-                        <a href="/smtp/{{ account.id }}/edit" class="text-indigo-600 hover:text-indigo-900">Edit</a>
-                        <form action="/smtp/{{ account.id }}/delete" method="POST" class="inline">
-                            <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this account?');">Delete</button>
-                        </form>
+                        <span id="card-test-indicator-{{ account.id }}" class="hidden text-xs"></span>
                     </div>
                 </div>
-                {% else %}
-                <div class="text-center py-8 bg-white rounded-lg border border-gray-200">
-                    <p class="text-sm text-gray-500">No SMTP accounts found.</p>
+                <div class="grid grid-cols-2 gap-2 text-xs text-gray-500 border-t border-gray-100 pt-2 mb-3">
+                    <div>
+                        <span class="font-medium text-gray-700">Host:</span> {{ account.host }}
+                    </div>
+                    <div>
+                        <span class="font-medium text-gray-700">Port:</span> {{ account.port }}
+                    </div>
                 </div>
-                {% endfor %}
+                <div class="flex justify-end space-x-3 border-t border-gray-100 pt-2 text-sm font-medium">
+                    <button type="button" id="btn-card-test-{{ account.id }}" onclick="testSavedAccount({{ account.id }})" class="text-green-600 hover:text-green-900 focus:outline-none">Test</button>
+                    <a href="/smtp/{{ account.id }}/edit" class="text-indigo-600 hover:text-indigo-900">Edit</a>
+                    <form action="/smtp/{{ account.id }}/delete" method="POST" class="inline">
+                        <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Are you sure you want to delete this account?');">Delete</button>
+                    </form>
+                </div>
             </div>
+            {% else %}
+            <div class="text-center py-8 bg-white rounded-lg border border-gray-200">
+                <p class="text-sm text-gray-500">No SMTP accounts found.</p>
+            </div>
+            {% endfor %}
         </div>
     </div>
 </div>
@@ -182,6 +205,117 @@ function fillPreset(provider) {
         document.getElementById('username').focus();
     }
 }
-</script>
 
+async function testConnection() {
+    const host = document.getElementById('host').value.trim();
+    const port = document.getElementById('port').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    
+    const statusDiv = document.getElementById('test-status-add');
+    const testBtn = document.getElementById('btn-test-add');
+    
+    if (!host || !port || !username || !password) {
+        statusDiv.className = 'text-sm p-3 rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200 mt-3';
+        statusDiv.textContent = 'Please fill out SMTP Host, Port, Username, and Password to test.';
+        statusDiv.classList.remove('hidden');
+        return;
+    }
+    
+    testBtn.disabled = true;
+    testBtn.textContent = 'Testing...';
+    statusDiv.className = 'text-sm p-3 rounded-md bg-blue-50 text-blue-800 border border-blue-200 mt-3';
+    statusDiv.textContent = 'Connecting and authenticating with SMTP server...';
+    statusDiv.classList.remove('hidden');
+    
+    try {
+        const formData = new FormData();
+        formData.append('host', host);
+        formData.append('port', port);
+        formData.append('username', username);
+        formData.append('password', password);
+        
+        const response = await fetch('/smtp/test-connection', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            statusDiv.className = 'text-sm p-3 rounded-md bg-green-50 text-green-800 border border-green-200 mt-3';
+            statusDiv.innerHTML = '<strong>Success!</strong> Successfully connected and authenticated with SMTP server.';
+        } else {
+            statusDiv.className = 'text-sm p-3 rounded-md bg-red-50 text-red-800 border border-red-200 mt-3';
+            statusDiv.innerHTML = '<strong>Connection Failed:</strong> ' + escapeHtml(data.error || 'Unknown error occurred.');
+        }
+    } catch (err) {
+        statusDiv.className = 'text-sm p-3 rounded-md bg-red-50 text-red-800 border border-red-200 mt-3';
+        statusDiv.innerHTML = '<strong>Connection Failed:</strong> Network or server error occurred.';
+    } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = 'Test Connection';
+    }
+}
+
+async function testSavedAccount(accountId) {
+    const desktopIndicator = document.getElementById(`test-indicator-${accountId}`);
+    const mobileIndicator = document.getElementById(`card-test-indicator-${accountId}`);
+    const desktopBtn = document.getElementById(`btn-test-${accountId}`);
+    const mobileBtn = document.getElementById(`btn-card-test-${accountId}`);
+    
+    const setStatus = (html, textClass, isHidden = false) => {
+        [desktopIndicator, mobileIndicator].forEach(el => {
+            if (el) {
+                if (isHidden) {
+                    el.classList.add('hidden');
+                } else {
+                    el.classList.remove('hidden');
+                    el.innerHTML = html;
+                    el.className = `text-xs font-semibold ${textClass}`;
+                }
+            }
+        });
+    };
+    
+    const setButtonState = (disabled, text) => {
+        [desktopBtn, mobileBtn].forEach(btn => {
+            if (btn) {
+                btn.disabled = disabled;
+                btn.textContent = text;
+            }
+        });
+    };
+    
+    setStatus('Testing...', 'text-blue-500');
+    setButtonState(true, 'Testing...');
+    
+    try {
+        const response = await fetch(`/smtp/${accountId}/test-connection`, {
+            method: 'POST'
+        });
+        const data = await response.json();
+        if (data.success) {
+            setStatus('✓ Success', 'text-green-600');
+            setTimeout(() => setStatus('', '', true), 5000);
+        } else {
+            setStatus(`✗ Failed: ${escapeHtml(data.error)}`, 'text-red-600');
+        }
+    } catch (err) {
+        setStatus('✗ Failed: Network error', 'text-red-600');
+    } finally {
+        setButtonState(false, 'Test');
+    }
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+</script>
 {% endblock %}

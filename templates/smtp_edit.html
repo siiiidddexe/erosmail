@@ -50,7 +50,12 @@
                     </div>
                 </div>
 
+                <div id="test-status-edit" class="hidden text-sm p-3 rounded-md mt-4"></div>
+
                 <div class="flex justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <button type="button" id="btn-test-edit" onclick="testConnection()" class="inline-flex justify-center py-2 px-4 border border-indigo-300 shadow-sm text-sm font-medium rounded-md text-indigo-700 bg-white hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Test Connection
+                    </button>
                     <a href="/smtp" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         Cancel
                     </a>
@@ -62,4 +67,68 @@
         </div>
     </div>
 </div>
+
+<script>
+async function testConnection() {
+    const host = document.getElementById('host').value.trim();
+    const port = document.getElementById('port').value.trim();
+    const username = document.getElementById('username').value.trim();
+    const password = document.getElementById('password').value.trim();
+    
+    const statusDiv = document.getElementById('test-status-edit');
+    const testBtn = document.getElementById('btn-test-edit');
+    
+    if (!host || !port || !username || !password) {
+        statusDiv.className = 'text-sm p-3 rounded-md bg-yellow-50 text-yellow-800 border border-yellow-200 mt-3';
+        statusDiv.textContent = 'Please fill out SMTP Host, Port, Username, and Password to test.';
+        statusDiv.classList.remove('hidden');
+        return;
+    }
+    
+    testBtn.disabled = true;
+    testBtn.textContent = 'Testing...';
+    statusDiv.className = 'text-sm p-3 rounded-md bg-blue-50 text-blue-800 border border-blue-200 mt-3';
+    statusDiv.textContent = 'Connecting and authenticating with SMTP server...';
+    statusDiv.classList.remove('hidden');
+    
+    try {
+        const formData = new FormData();
+        formData.append('host', host);
+        formData.append('port', port);
+        formData.append('username', username);
+        formData.append('password', password);
+        
+        const response = await fetch('/smtp/test-connection', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        if (data.success) {
+            statusDiv.className = 'text-sm p-3 rounded-md bg-green-50 text-green-800 border border-green-200 mt-3';
+            statusDiv.innerHTML = '<strong>Success!</strong> Successfully connected and authenticated with SMTP server.';
+        } else {
+            statusDiv.className = 'text-sm p-3 rounded-md bg-red-50 text-red-800 border border-red-200 mt-3';
+            statusDiv.innerHTML = '<strong>Connection Failed:</strong> ' + escapeHtml(data.error || 'Unknown error occurred.');
+        }
+    } catch (err) {
+        statusDiv.className = 'text-sm p-3 rounded-md bg-red-50 text-red-800 border border-red-200 mt-3';
+        statusDiv.innerHTML = '<strong>Connection Failed:</strong> Network or server error occurred.';
+    } finally {
+        testBtn.disabled = false;
+        testBtn.textContent = 'Test Connection';
+    }
+}
+
+function escapeHtml(text) {
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+</script>
 {% endblock %}

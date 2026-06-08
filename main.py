@@ -751,6 +751,83 @@ async def add_smtp(
     db.commit()
     return RedirectResponse(url="/smtp", status_code=status.HTTP_302_FOUND)
 
+@app.post("/smtp/test-connection")
+async def test_smtp_connection(
+    request: Request,
+    host: str = Form(...),
+    port: int = Form(...),
+    username: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    try:
+        get_current_user(request, db)
+    except Exception:
+        return {"success": False, "error": "Not authenticated"}
+    
+    import aiosmtplib
+    try:
+        use_tls = port == 465
+        start_tls = port in [587, 25] or (port != 465)
+        
+        client = aiosmtplib.SMTP(
+            hostname=host,
+            port=port,
+            use_tls=use_tls,
+            start_tls=start_tls,
+            timeout=10
+        )
+        await client.connect()
+        if username and password:
+            await client.login(username, password)
+        await client.quit()
+        return {"success": True}
+    except Exception as e:
+        error_msg = str(e)
+        if "timed out" in error_msg.lower():
+            error_msg = "Connection timed out. Check SMTP host, port, and network availability."
+        return {"success": False, "error": error_msg}
+
+
+@app.post("/smtp/{account_id}/test-connection")
+async def test_saved_smtp_connection(
+    request: Request,
+    account_id: int,
+    db: Session = Depends(get_db)
+):
+    try:
+        user = get_current_user(request, db)
+    except Exception:
+        return {"success": False, "error": "Not authenticated"}
+    
+    account = db.query(SMTPAccount).filter(SMTPAccount.id == account_id, SMTPAccount.user_id == user.id).first()
+    if not account:
+        return {"success": False, "error": "SMTP account not found"}
+        
+    import aiosmtplib
+    try:
+        use_tls = account.port == 465
+        start_tls = account.port in [587, 25] or (account.port != 465)
+        
+        client = aiosmtplib.SMTP(
+            hostname=account.host,
+            port=account.port,
+            use_tls=use_tls,
+            start_tls=start_tls,
+            timeout=10
+        )
+        await client.connect()
+        if account.username and account.password:
+            await client.login(account.username, account.password)
+        await client.quit()
+        return {"success": True}
+    except Exception as e:
+        error_msg = str(e)
+        if "timed out" in error_msg.lower():
+            error_msg = "Connection timed out. Check SMTP host, port, and network availability."
+        return {"success": False, "error": error_msg}
+
+
 @app.post("/smtp/{account_id}/delete")
 async def delete_smtp(request: Request, account_id: int, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
