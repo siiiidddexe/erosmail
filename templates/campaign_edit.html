@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Campaign{% endblock %}
+
+{% block content %}
+<div class="max-w-4xl mx-auto">
+    <div class="mb-6">
+        <a href="/campaign/{{ campaign.id }}" class="text-indigo-600 hover:text-indigo-900">
+            <svg class="inline h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            Back to Campaign
+        </a>
+    </div>
+
+    <div class="bg-white shadow sm:rounded-lg">
+        <div class="px-4 py-5 sm:p-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Edit Campaign</h3>
+            <p class="mt-1 text-sm text-gray-500">Update your campaign details</p>
+
+            <form action="/campaign/{{ campaign.id }}/update" method="POST" enctype="multipart/form-data" class="mt-6 space-y-6">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700">Campaign Name</label>
+                    <input type="text" name="name" id="name" value="{{ campaign.name }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700">Email Subject</label>
+                    <input type="text" name="subject" id="subject" value="{{ campaign.subject }}" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">
+                </div>
+
+                <div>
+                    <label for="body" class="block text-sm font-medium text-gray-700">Email Body</label>
+                    <textarea name="body" id="body" rows="10" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm">{{ campaign.body }}</textarea>
+                    <p class="mt-1 text-xs text-gray-500">Use {name} for personalization</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Email Type</label>
+                    <div class="mt-2 space-y-2">
+                        <label class="inline-flex items-center">
+                            <input type="radio" name="email_type" value="text" {% if campaign.email_type == 'text' %}checked{% endif %} class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                            <span class="ml-2 text-sm text-gray-700">Plain Text</span>
+                        </label>
+                        <label class="inline-flex items-center ml-6">
+                            <input type="radio" name="email_type" value="html" {% if campaign.email_type == 'html' %}checked{% endif %} class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300">
+                            <span class="ml-2 text-sm text-gray-700">HTML</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Recipient Template (Excel)</label>
+                    {% if campaign.template_file %}
+                    <p class="mt-1 text-sm text-gray-500">Current: {{ campaign.template_file.split('/')[-1] }}</p>
+                    {% endif %}
+                    <input type="file" name="template_file" accept=".xlsx,.xls" class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
+                    <p class="mt-1 text-xs text-gray-500">Upload a new Excel file with 'name' and 'email' columns (optional)</p>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">SMTP Accounts</label>
+                    <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
+                        {% for smtp in smtp_accounts %}
+                        <label class="flex items-center">
+                            <input type="checkbox" name="smtp_ids" value="{{ smtp.id }}" {% if smtp.id in selected_smtp_ids %}checked{% endif %} class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700">{{ smtp.name }} ({{ smtp.username }})</span>
+                        </label>
+                        {% else %}
+                        <p class="text-sm text-gray-500">No SMTP accounts available</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">API Accounts</label>
+                    <div class="space-y-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
+                        {% for api in api_accounts %}
+                        <label class="flex items-center">
+                            <input type="checkbox" name="api_ids" value="{{ api.id }}" {% if api.id in selected_api_ids %}checked{% endif %} class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                            <span class="ml-2 text-sm text-gray-700">{{ api.name }} ({{ api.provider }})</span>
+                        </label>
+                        {% else %}
+                        <p class="text-sm text-gray-500">No API accounts available</p>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="border-t border-gray-200 pt-6">
+                    <h4 class="text-sm font-medium text-gray-900 mb-4">Scheduling Options</h4>
+                    <input type="hidden" name="timezone_offset" id="timezone_offset" value="{{ campaign.timezone_offset or 0 }}">
+                    
+                    <div class="space-y-4">
+                        <div>
+                            <label class="flex items-center">
+                                <input type="checkbox" name="repeat_enabled" value="true" {% if campaign.repeat_enabled %}checked{% endif %} class="focus:ring-indigo-500 h-4 w-4 text-indigo-600 border-gray-300 rounded">
+                                <span class="ml-2 text-sm text-gray-700">Enable Repeat Scheduling</span>
+                            </label>
+                        </div>
+
+                        <div>
+                            <label for="repeat_frequency" class="block text-sm font-medium text-gray-700">Repeat Frequency</label>
+                            <select name="repeat_frequency" id="repeat_frequency" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border">
+                                <option value="" {% if not campaign.repeat_frequency %}selected{% endif %}>None</option>
+                                <option value="daily" {% if campaign.repeat_frequency == 'daily' %}selected{% endif %}>Daily</option>
+                                <option value="weekly" {% if campaign.repeat_frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                                <option value="monthly" {% if campaign.repeat_frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                                <option value="yearly" {% if campaign.repeat_frequency == 'yearly' %}selected{% endif %}>Yearly</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="pause_start_hour" class="block text-sm font-medium text-gray-700">Pause Start Hour</label>
+                                <select name="pause_start_hour" id="pause_start_hour" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border">
+                                    <option value="" {% if campaign.pause_start_hour is none %}selected{% endif %}>None (Don't pause)</option>
+                                    {% for h in range(24) %}
+                                    <option value="{{ h }}" {% if campaign.pause_start_hour == h %}selected{% endif %}>
+                                        {% if h == 0 %}12 AM
+                                        {% elif h < 12 %}{{ h }} AM
+                                        {% elif h == 12 %}12 PM
+                                        {% else %}{{ h - 12 }} PM
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Stop sending at this hour</p>
+                            </div>
+                            <div>
+                                <label for="pause_end_hour" class="block text-sm font-medium text-gray-700">Pause End Hour</label>
+                                <select name="pause_end_hour" id="pause_end_hour" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md border">
+                                    <option value="" {% if campaign.pause_end_hour is none %}selected{% endif %}>None (Don't pause)</option>
+                                    {% for h in range(24) %}
+                                    <option value="{{ h }}" {% if campaign.pause_end_hour == h %}selected{% endif %}>
+                                        {% if h == 0 %}12 AM
+                                        {% elif h < 12 %}{{ h }} AM
+                                        {% elif h == 12 %}12 PM
+                                        {% else %}{{ h - 12 }} PM
+                                        {% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500">Resume sending at this hour</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex justify-end space-x-3">
+                    <a href="/campaign/{{ campaign.id }}" class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Cancel
+                    </a>
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        Update Campaign
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('timezone_offset').value = new Date().getTimezoneOffset();
+</script>
+{% endblock %}

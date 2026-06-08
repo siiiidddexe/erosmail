@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Campaign Details{% endblock %}
+
+{% block content %}
+<div class="px-4 py-6 sm:px-0">
+    <div class="mb-6">
+        <a href="/campaigns" class="text-sm text-indigo-600 hover:text-indigo-900">&larr; Back to Campaigns</a>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-6">
+        <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+            <div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900">{{ campaign.name }}</h3>
+                <p class="mt-1 max-w-2xl text-sm text-gray-500">Status: 
+                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                        {% if campaign.status == 'completed' %}bg-green-100 text-green-800
+                        {% elif campaign.status == 'sending' %}bg-yellow-100 text-yellow-800
+                        {% elif campaign.status == 'scheduled' %}bg-blue-100 text-blue-800
+                        {% elif campaign.status == 'paused' %}bg-orange-100 text-orange-800
+                        {% elif campaign.status == 'failed' %}bg-red-100 text-red-800
+                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                        {{ campaign.status }}
+                    </span>
+                </p>
+                {% if campaign.scheduled_at %}
+                <p class="mt-1 text-sm text-gray-500">Scheduled for: {{ campaign.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                {% endif %}
+                {% if campaign.repeat_enabled %}
+                <p class="mt-1 text-sm text-gray-500">Repeat: {{ campaign.repeat_frequency }} {% if campaign.next_repeat_at %}(Next: {{ campaign.next_repeat_at.strftime('%Y-%m-%d %H:%M') }}){% endif %}</p>
+                {% endif %}
+                {% if campaign.pause_start_hour is not none and campaign.pause_end_hour is not none %}
+                <p class="mt-1 text-sm text-gray-500">Pause hours: {{ campaign.pause_start_hour }}:00 - {{ campaign.pause_end_hour }}:00</p>
+                {% endif %}
+            </div>
+            <div class="flex space-x-2">
+                {% if campaign.status == 'draft' %}
+                <a href="/campaign/{{ campaign.id }}/edit" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                    </svg>
+                    Edit
+                </a>
+                <a href="/campaign/{{ campaign.id }}/send" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700">
+                    <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Send Campaign
+                </a>
+                {% elif campaign.status == 'completed' %}
+                <form action="/campaign/{{ campaign.id }}/resend" method="POST" class="inline">
+                    <button type="submit" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700" onclick="return confirm('This will clear all logs and resend the campaign. Continue?');">
+                        <svg class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        Resend Campaign
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+        
+        {% if campaign.status == 'sending' %}
+        <div class="border-t border-gray-200 px-4 py-5 sm:p-6" id="progress-section">
+            <h4 class="text-sm font-medium text-gray-900 mb-3">Sending Progress</h4>
+            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                <div id="progress-bar" class="bg-indigo-600 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <div class="flex justify-between text-sm text-gray-600">
+                <span id="progress-text">0 / {{ campaign.total_recipients }} sent</span>
+                <span id="progress-percent">0%</span>
+            </div>
+            <div class="mt-2 text-sm text-gray-600">
+                <span class="text-green-600" id="sent-count">Sent: {{ campaign.sent_count }}</span> | 
+                <span class="text-red-600" id="failed-count">Failed: {{ campaign.failed_count }}</span>
+            </div>
+        </div>
+        {% endif %}
+        
+        <div class="border-t border-gray-200 px-4 py-5 sm:p-6">
+            <dl class="grid grid-cols-1 gap-x-4 gap-y-8 sm:grid-cols-2">
+                <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Subject</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ campaign.subject }}</dd>
+                </div>
+                <div class="sm:col-span-1">
+                    <dt class="text-sm font-medium text-gray-500">Created At</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ campaign.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Body</dt>
+                    <dd class="mt-1 text-sm text-gray-900 whitespace-pre-wrap">{{ campaign.body }}</dd>
+                </div>
+                <div class="sm:col-span-2">
+                    <dt class="text-sm font-medium text-gray-500">Template File</dt>
+                    <dd class="mt-1 text-sm text-gray-900">{{ campaign.template_file or 'No template uploaded' }}</dd>
+                </div>
+            </dl>
+        </div>
+    </div>
+
+    <div class="bg-white shadow overflow-hidden sm:rounded-lg">
+        <div class="px-4 py-5 sm:px-6">
+            <h3 class="text-lg leading-6 font-medium text-gray-900">Delivery Logs</h3>
+        </div>
+        <div class="border-t border-gray-200">
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Recipient</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sent At</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Error</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {% for log in logs %}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ log.recipient_email }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                    {% if log.status == 'sent' %}bg-green-100 text-green-800
+                                    {% else %}bg-red-100 text-red-800{% endif %}">
+                                    {{ log.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ log.sent_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                            <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title="{{ log.error_message }}">{{ log.error_message or '-' }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">No logs available yet.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% if campaign.status == 'sending' %}
+<script>
+// Poll for progress updates
+function updateProgress() {
+    fetch('/campaign/{{ campaign.id }}/progress')
+        .then(response => response.json())
+        .then(data => {
+            const progressBar = document.getElementById('progress-bar');
+            const progressText = document.getElementById('progress-text');
+            const progressPercent = document.getElementById('progress-percent');
+            const sentCount = document.getElementById('sent-count');
+            const failedCount = document.getElementById('failed-count');
+            
+            if (progressBar && data.total > 0) {
+                const percent = data.progress;
+                progressBar.style.width = percent + '%';
+                progressText.textContent = (data.sent + data.failed) + ' / ' + data.total + ' processed';
+                progressPercent.textContent = percent + '%';
+                sentCount.textContent = 'Sent: ' + data.sent;
+                failedCount.textContent = 'Failed: ' + data.failed;
+                
+                if (data.status === 'completed') {
+                    setTimeout(() => location.reload(), 1000);
+                }
+            }
+        })
+        .catch(error => console.error('Error fetching progress:', error));
+}
+
+// Update every 2 seconds
+setInterval(updateProgress, 2000);
+updateProgress(); // Initial call
+</script>
+{% endif %}
+{% endblock %}

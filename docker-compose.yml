@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  erosmail:
+    build: .
+    container_name: erosmail
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=${SECRET_KEY:-your-super-secret-key-change-in-production}
+      - DATABASE_URL=sqlite:////app/data/erosmail.db
+      - PYTHONUNBUFFERED=1
+    volumes:
+      - erosmail_uploads:/app/uploads
+      - erosmail_data:/app/data
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  erosmail_uploads:
+    driver: local
+  erosmail_data:
+    driver: local
