@@ -1,3 +1,10 @@
+import bcrypt
+# Passlib bcrypt monkey-patch to prevent "AttributeError: module 'bcrypt' has no attribute '__about__'"
+if not hasattr(bcrypt, "__about__"):
+    class About:
+        __version__ = bcrypt.__version__
+    bcrypt.__about__ = About()
+
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import OAuth2PasswordBearer
