@@ -190,6 +190,10 @@ class EmailService:
             msg.set_content(body)
         
         try:
+            # Determine TLS parameters based on port (e.g. 465 is direct TLS, 587 or 25 upgrades via STARTTLS)
+            use_tls = smtp_account.port == 465
+            start_tls = smtp_account.port in [587, 25] or (smtp_account.port != 465)
+
             # Send email
             await aiosmtplib.send(
                 msg,
@@ -197,7 +201,8 @@ class EmailService:
                 port=smtp_account.port,
                 username=smtp_account.username,
                 password=smtp_account.password,
-                start_tls=True,
+                use_tls=use_tls,
+                start_tls=start_tls,
                 timeout=30
             )
             
