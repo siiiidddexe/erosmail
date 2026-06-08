@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p uploads data
+RUN mkdir -p uploads data static
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
