@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% block seo_title %}{{ base.name }} — ErosMail Contacts{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up space-y-5">
+    <!-- Header -->
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <a href="/contacts" class="text-xs text-gray-400 hover:text-gray-700 transition-colors">&larr; Contact Bases</a>
+            <h1 class="text-xl font-semibold text-gray-900 mt-1">{{ base.name }}</h1>
+            {% if base.description %}
+            <p class="text-sm text-gray-400 mt-0.5">{{ base.description }}</p>
+            {% endif %}
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" onclick="document.getElementById('add-modal').classList.remove('hidden')"
+                class="btn-ghost inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Add Contact
+            </button>
+            <button type="button" onclick="document.getElementById('import-modal').classList.remove('hidden')"
+                class="btn-primary inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                Import Excel
+            </button>
+        </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <p class="text-xs text-gray-400 uppercase tracking-wide">Total Contacts</p>
+            <p class="text-2xl font-semibold text-gray-900 mt-1">{{ contacts|length }}</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4">
+            <p class="text-xs text-gray-400 uppercase tracking-wide">Created</p>
+            <p class="text-sm font-medium text-gray-700 mt-1">{{ base.created_at.strftime('%b %d, %Y') }}</p>
+        </div>
+    </div>
+
+    {% if request.query_params.get('imported') %}
+    <div class="bg-green-50 border border-green-100 text-green-700 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Imported {{ request.query_params.get('imported') }} new contacts.
+    </div>
+    {% endif %}
+    {% if request.query_params.get('error') == 'no_email_column' %}
+    <div class="bg-red-50 border border-red-100 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Import failed: the Excel file must have an <code class="font-mono bg-red-100 px-1 rounded">email</code> column.
+    </div>
+    {% endif %}
+
+    <!-- Search + table -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center gap-3">
+            <form method="GET" action="/contacts/{{ base.id }}" class="flex-1 min-w-0">
+                <div class="relative">
+                    <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" name="search" value="{{ search }}" placeholder="Search by name or email…" title="Search contacts"
+                        class="w-full pl-9 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+            </form>
+            <span class="text-xs text-gray-400 whitespace-nowrap">{{ contacts|length }} contact{% if contacts|length != 1 %}s{% endif %}</span>
+        </div>
+
+        <!-- Bulk bar -->
+        <div id="bulk-action-bar" class="hidden px-4 py-3 bg-gray-900 text-white flex items-center gap-4 text-sm">
+            <span class="text-xs"><span id="bulk-selected-count">0</span> selected</span>
+            <form method="POST" action="/contacts/{{ base.id }}/delete-contacts" id="bulk-contact-form">
+                <input type="hidden" name="action" value="delete_selected">
+                <div id="bulk-contact-ids"></div>
+                <button type="submit" class="bg-red-500 hover:bg-red-600 text-xs text-white px-3 py-1.5 rounded-lg transition-colors" onclick="return confirmDelete()">Delete selected</button>
+            </form>
+            <form method="POST" action="/contacts/{{ base.id }}/delete-contacts" class="inline">
+                <input type="hidden" name="action" value="delete_all">
+                <button type="submit" class="text-xs text-red-400 hover:text-red-300 transition-colors" onclick="return confirm('Delete ALL contacts in this base?')">Delete all</button>
+            </form>
+            <button type="button" onclick="clearAllChecks()" class="ml-auto text-xs text-gray-400 hover:text-white transition-colors">Clear</button>
+        </div>
+
+        <!-- Select helpers -->
+        <div class="px-6 py-2 border-b border-gray-50 bg-gray-50 flex gap-3">
+            <input type="checkbox" id="check-all-contacts" aria-label="Select all contacts" onchange="toggleAllContacts(this)" class="rounded border-gray-300 cursor-pointer">
+            <button type="button" onclick="toggleAllContacts(document.getElementById('check-all-contacts'), true)" class="text-xs text-gray-500 hover:text-gray-800 transition-colors">Select all</button>
+            <button type="button" onclick="clearAllChecks()" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">Deselect all</button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-gray-100 bg-gray-50">
+                        <th class="px-4 py-3 w-8"></th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Email</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide hidden sm:table-cell">Added</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for contact in contacts %}
+                    <tr class="checkbox-row hover:bg-gray-50 transition-colors">
+                        <td class="px-4 py-3 w-8">
+                            <input type="checkbox" name="contact_ids" value="{{ contact.id }}" aria-label="Select {{ contact.email }}" class="row-check contact-check rounded border-gray-300 cursor-pointer" onchange="syncContactIds()">
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-900">{{ contact.name or '—' }}</td>
+                        <td class="px-4 py-3 text-sm text-gray-600">{{ contact.email }}</td>
+                        <td class="px-4 py-3 hidden sm:table-cell text-xs text-gray-400">{{ contact.created_at.strftime('%b %d, %Y') }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="px-6 py-12 text-center text-sm text-gray-400">
+                            {% if search %}No contacts match "{{ search }}"{% else %}No contacts yet. Add some above or import from Excel.{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Danger zone -->
+    <div class="bg-white rounded-xl border border-red-100 shadow-sm px-6 py-4 flex items-center justify-between">
+        <div>
+            <p class="text-sm font-medium text-gray-700">Delete this contact base</p>
+            <p class="text-xs text-gray-400">This will permanently delete the base and all its contacts.</p>
+        </div>
+        <form method="POST" action="/contacts/{{ base.id }}/delete" onsubmit="return confirm('Delete this contact base and all contacts?')">
+            <button type="submit" class="text-sm text-red-500 hover:text-red-700 font-medium transition-colors">Delete base</button>
+        </form>
+    </div>
+</div>
+
+<!-- Add contact modal -->
+<div id="add-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog" aria-label="Add contact">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('add-modal').classList.add('hidden')"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-fade-in-up">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold">Add Contact</h3>
+                <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')" aria-label="Close" class="text-gray-400 hover:text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="POST" action="/contacts/{{ base.id }}/add" class="px-6 py-5 space-y-4">
+                <div>
+                    <label for="contact-name" class="block text-sm font-medium text-gray-700 mb-1">Name <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <input type="text" name="name" id="contact-name" placeholder="John Doe"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div>
+                    <label for="contact-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <input type="email" name="email" id="contact-email" required placeholder="john@example.com"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div class="flex justify-end gap-3 pt-1">
+                    <button type="button" onclick="document.getElementById('add-modal').classList.add('hidden')" class="btn-ghost px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
+                    <button type="submit" class="btn-primary px-5 py-2 rounded-lg text-sm font-medium">Add</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Import modal -->
+<div id="import-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog" aria-label="Import contacts">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('import-modal').classList.add('hidden')"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm animate-fade-in-up">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold">Import from Excel</h3>
+                <button type="button" onclick="document.getElementById('import-modal').classList.add('hidden')" aria-label="Close" class="text-gray-400 hover:text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="POST" action="/contacts/{{ base.id }}/import" enctype="multipart/form-data" class="px-6 py-5 space-y-4">
+                <p class="text-xs text-gray-500">Excel file with <code class="bg-gray-100 px-1 rounded">name</code> and <code class="bg-gray-100 px-1 rounded">email</code> columns. Duplicate emails are skipped.</p>
+                <div>
+                    <label for="import-file" class="block text-sm font-medium text-gray-700 mb-1">Choose file</label>
+                    <input type="file" name="file" id="import-file" required accept=".xlsx,.xls" title="Select Excel file to import"
+                        class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer">
+                </div>
+                <div class="flex justify-end gap-3 pt-1">
+                    <button type="button" onclick="document.getElementById('import-modal').classList.add('hidden')" class="btn-ghost px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
+                    <button type="submit" class="btn-primary px-5 py-2 rounded-lg text-sm font-medium">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleAllContacts(src, forceTrue) {
+    const checked = forceTrue !== undefined ? forceTrue : src.checked;
+    document.querySelectorAll('.contact-check').forEach(c => c.checked = checked);
+    syncContactIds();
+}
+
+function syncContactIds() {
+    const checked = document.querySelectorAll('.contact-check:checked');
+    const container = document.getElementById('bulk-contact-ids');
+    container.innerHTML = '';
+    checked.forEach(c => {
+        const h = document.createElement('input');
+        h.type = 'hidden'; h.name = 'contact_ids'; h.value = c.value;
+        container.appendChild(h);
+    });
+    updateBulkBar();
+}
+
+function clearAllChecks() {
+    document.querySelectorAll('.contact-check, #check-all-contacts').forEach(c => c.checked = false);
+    syncContactIds();
+}
+
+function confirmDelete() {
+    const n = document.querySelectorAll('.contact-check:checked').length;
+    return confirm(`Delete ${n} contact(s)?`);
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        document.getElementById('add-modal').classList.add('hidden');
+        document.getElementById('import-modal').classList.add('hidden');
+    }
+});
+
+{% if request.query_params.get('imported') %}
+showToast('Imported {{ request.query_params.get("imported") }} contacts');
+{% endif %}
+</script>
+{% endblock %}

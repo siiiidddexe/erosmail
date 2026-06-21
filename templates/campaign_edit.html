@@ -1,0 +1,250 @@
+{% extends "base.html" %}
+{% block seo_title %}Edit Campaign — ErosMail{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto animate-fade-in-up space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-xl font-semibold text-gray-900">Edit Campaign</h1>
+            <p class="text-sm text-gray-400 mt-0.5">{{ campaign.name }}</p>
+        </div>
+        <a href="/campaign/{{ campaign.id }}" class="text-sm text-gray-400 hover:text-gray-700 transition-colors">&larr; Back</a>
+    </div>
+
+    <form action="/campaign/{{ campaign.id }}/edit" method="POST" enctype="multipart/form-data">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 class="text-sm font-semibold text-gray-700">Campaign Details</h2>
+                {% if has_openrouter %}
+                <button type="button" onclick="openAIModal()" class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg text-xs font-medium transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                    AI Fill
+                </button>
+                {% endif %}
+            </div>
+            <div class="px-6 py-5 space-y-5">
+                <div>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
+                    <input type="text" name="name" id="name" required value="{{ campaign.name }}"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div>
+                    <label for="subject" class="block text-sm font-medium text-gray-700 mb-1">Email Subject</label>
+                    <div class="flex gap-2">
+                        <input type="text" name="subject" id="subject" required value="{{ campaign.subject }}"
+                            class="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        <button type="button" onclick="previewEmail()" title="Preview email" class="btn-ghost px-3 py-2.5 rounded-lg text-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <div class="flex items-center justify-between mb-1">
+                        <label for="body" class="block text-sm font-medium text-gray-700">Email Body</label>
+                        <span class="text-xs text-gray-400">Use <code class="bg-gray-100 px-1 rounded">{name}</code> to personalize</span>
+                    </div>
+                    <textarea id="body" name="body" rows="10" required
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-y font-mono">{{ campaign.body }}</textarea>
+                    <div class="flex gap-2 mt-2">
+                        <button type="button" onclick="previewEmail()" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">Preview email</button>
+                        <button type="button" onclick="insertVar('{name}')" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">Insert {name}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipients -->
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Recipients</h2>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div class="flex gap-2 p-1 bg-gray-100 rounded-lg w-fit">
+                    <button type="button" id="tab-base" onclick="switchTab('base')" class="tab-btn text-xs px-3 py-1.5 rounded-md {% if campaign.contact_base_id %}bg-white shadow-sm text-gray-700{% else %}text-gray-500{% endif %} font-medium transition-all">Contact Base</button>
+                    <button type="button" id="tab-upload" onclick="switchTab('upload')" class="tab-btn text-xs px-3 py-1.5 rounded-md {% if not campaign.contact_base_id %}bg-white shadow-sm text-gray-700{% else %}text-gray-500{% endif %} font-medium transition-all">Upload Excel</button>
+                </div>
+                <div id="pane-base" class="{% if not campaign.contact_base_id %}hidden{% endif %}">
+                    {% if contact_bases %}
+                    <label for="contact_base_id" class="block text-sm font-medium text-gray-700 mb-1">Select Contact Base</label>
+                    <select name="contact_base_id" id="contact_base_id" title="Select a contact base"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        <option value="">— No contact base —</option>
+                        {% for base in contact_bases %}
+                        <option value="{{ base.id }}" {% if campaign.contact_base_id == base.id %}selected{% endif %}>{{ base.name }} ({{ base.contacts|length }} contacts)</option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <p class="text-sm text-gray-400">No contact bases. <a href="/contacts" class="text-indigo-500">Create one →</a></p>
+                    {% endif %}
+                </div>
+                <div id="pane-upload" class="{% if campaign.contact_base_id %}hidden{% endif %}">
+                    {% if campaign.template_file %}
+                    <div class="flex items-center gap-2 p-3 bg-gray-50 rounded-lg mb-3">
+                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        <p class="text-xs text-gray-600">Current file: <span class="font-medium">{{ campaign.template_file.split('/')[-1] }}</span></p>
+                    </div>
+                    {% endif %}
+                    <label for="template_file" class="block text-sm font-medium text-gray-700 mb-2">Replace with new file (optional)</label>
+                    <input id="template_file" name="template_file" type="file" accept=".xlsx,.xls" title="Upload Excel file with name and email columns"
+                        class="w-full text-sm text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer">
+                </div>
+            </div>
+        </div>
+
+        <!-- SMTP -->
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden mb-4">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">SMTP Accounts</h2>
+            </div>
+            <div class="px-6 py-4">
+                {% if smtp_accounts %}
+                <div class="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {% for smtp in smtp_accounts %}
+                    <label class="flex items-center gap-3 p-2.5 border border-gray-100 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                        <input type="checkbox" name="smtp_ids" value="{{ smtp.id }}" {% if smtp.id in selected_smtp_ids %}checked{% endif %} class="rounded border-gray-300 accent-gray-900">
+                        <div>
+                            <p class="text-sm font-medium text-gray-800">{{ smtp.name }}</p>
+                            <p class="text-xs text-gray-400">{{ smtp.username or 'NexoMailer API' }}</p>
+                        </div>
+                    </label>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <p class="text-sm text-gray-400 py-3">No SMTP accounts. <a href="/smtp" class="text-indigo-500">Add one →</a></p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="flex justify-between items-center">
+            <form method="POST" action="/campaign/{{ campaign.id }}/delete" onsubmit="return confirm('Delete this campaign and all logs?')">
+                <button type="submit" class="text-sm text-red-500 hover:text-red-700 font-medium transition-colors">Delete campaign</button>
+            </form>
+            <div class="flex gap-3">
+                <a href="/campaign/{{ campaign.id }}" class="btn-ghost px-5 py-2.5 rounded-lg text-sm font-medium">Cancel</a>
+                <button type="submit" class="btn-primary px-6 py-2.5 rounded-lg text-sm font-medium">Save Changes</button>
+            </div>
+        </div>
+    </form>
+</div>
+
+<!-- Preview Modal -->
+<div id="preview-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog" aria-label="Email preview">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closePreview()"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col animate-fade-in-up">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold">Email Preview</h3>
+                <button type="button" onclick="closePreview()" aria-label="Close preview" class="text-gray-400 hover:text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="px-6 py-3 border-b border-gray-100 bg-gray-50">
+                <p class="text-xs text-gray-400">Subject: <span id="preview-subject" class="text-gray-700 font-medium"></span></p>
+            </div>
+            <div class="flex-1 overflow-y-auto p-6">
+                <pre id="preview-body" class="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed"></pre>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- AI Modal -->
+<div id="ai-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog" aria-label="AI fill assistant">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="closeAIModal()"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg animate-fade-in-up">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold">AI Email Writer</h3>
+                <button type="button" onclick="closeAIModal()" aria-label="Close AI modal" class="text-gray-400 hover:text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label for="ai-prompt" class="block text-sm font-medium text-gray-700 mb-1">Describe your email</label>
+                    <textarea id="ai-prompt" rows="3" placeholder="e.g. Re-engagement email for inactive users, friendly tone…"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 resize-none"></textarea>
+                </div>
+                <div>
+                    <label for="ai-field" class="block text-sm font-medium text-gray-700 mb-1">Generate</label>
+                    <select id="ai-field" title="What to generate" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        <option value="both">Subject + Body</option>
+                        <option value="subject">Subject only</option>
+                        <option value="body">Body only</option>
+                    </select>
+                </div>
+                <p id="ai-error" class="text-xs text-red-500 hidden"></p>
+            </div>
+            <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3">
+                <button type="button" onclick="closeAIModal()" class="btn-ghost px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
+                <button type="button" id="ai-generate-btn" onclick="runAI()" class="btn-primary px-5 py-2 rounded-lg text-sm font-medium">Generate</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function switchTab(tab) {
+    const isBase = tab === 'base';
+    document.getElementById('pane-base').classList.toggle('hidden', !isBase);
+    document.getElementById('pane-upload').classList.toggle('hidden', isBase);
+    ['tab-base', 'tab-upload'].forEach((id, i) => {
+        const active = (i === 0) === isBase;
+        const el = document.getElementById(id);
+        el.classList.toggle('bg-white', active);
+        el.classList.toggle('shadow-sm', active);
+        el.classList.toggle('text-gray-700', active);
+        el.classList.toggle('text-gray-500', !active);
+    });
+    if (!isBase) { const s = document.getElementById('contact_base_id'); if (s) s.value = ''; }
+}
+
+function previewEmail() {
+    const subject = document.getElementById('subject').value || '(no subject)';
+    const body = (document.getElementById('body').value || '(no body)').replace(/\{name\}/g, 'Sample Name');
+    document.getElementById('preview-subject').textContent = subject.replace(/\{name\}/g, 'Sample Name');
+    document.getElementById('preview-body').textContent = body;
+    document.getElementById('preview-modal').classList.remove('hidden');
+}
+function closePreview() { document.getElementById('preview-modal').classList.add('hidden'); }
+
+function insertVar(v) {
+    const ta = document.getElementById('body');
+    const pos = ta.selectionStart;
+    ta.value = ta.value.slice(0, pos) + v + ta.value.slice(pos);
+    ta.selectionStart = ta.selectionEnd = pos + v.length;
+    ta.focus();
+}
+
+function openAIModal() { document.getElementById('ai-modal').classList.remove('hidden'); document.getElementById('ai-prompt').focus(); }
+function closeAIModal() { document.getElementById('ai-modal').classList.add('hidden'); }
+
+async function runAI() {
+    const prompt = document.getElementById('ai-prompt').value.trim();
+    if (!prompt) return;
+    const btn = document.getElementById('ai-generate-btn');
+    const errEl = document.getElementById('ai-error');
+    btn.disabled = true; btn.textContent = 'Generating…'; errEl.classList.add('hidden');
+    const fd = new FormData();
+    fd.append('prompt', prompt);
+    fd.append('field', document.getElementById('ai-field').value);
+    try {
+        const res = await fetch('/ai/generate', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
+        if (data.subject) document.getElementById('subject').value = data.subject;
+        if (data.body) document.getElementById('body').value = data.body;
+        closeAIModal();
+        showToast('AI filled in subject and body');
+    } catch (e) {
+        errEl.textContent = e.message; errEl.classList.remove('hidden');
+    } finally {
+        btn.disabled = false; btn.textContent = 'Generate';
+    }
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { closePreview(); closeAIModal(); } });
+</script>
+{% endblock %}

@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block seo_title %}ErosMail — Professional Email Campaign Manager{% endblock %}</title>
+    <meta name="description" content="{% block seo_desc %}ErosMail: Send, track, and manage email campaigns with powerful contact management, AI-assisted writing, and detailed analytics.{% endblock %}">
+    <meta name="robots" content="noindex, nofollow">
+    <meta property="og:title" content="{% block og_title %}ErosMail{% endblock %}">
+    <meta property="og:description" content="Professional email campaign platform">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="/static/logo.png">
+    <meta name="theme-color" content="#1a1a1a">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f5f5f5',
+                            100: '#e8e8e8',
+                            200: '#d0d0d0',
+                            500: '#666666',
+                            800: '#1a1a1a',
+                            900: '#0d0d0d',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', -apple-system, sans-serif; }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to   { opacity: 1; }
+        }
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes pulse-subtle {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        @keyframes logoEntrance {
+            0%   { opacity: 0; transform: scale(0.92); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        .animate-fade-in-up  { will-change: transform, opacity; animation: fadeInUp 0.45s ease both; }
+        .animate-fade-in     { will-change: opacity; animation: fadeIn 0.35s ease both; }
+        .animate-slide-right { will-change: transform, opacity; animation: slideInRight 0.4s ease both; }
+        .animate-logo        { will-change: transform, opacity; animation: logoEntrance 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-150 { animation-delay: 0.15s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+
+        .nav-link {
+            position: relative;
+            transition: color 0.2s;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #1a1a1a;
+            transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+        }
+        .nav-link:hover::after,
+        .nav-link.active::after { width: 100%; }
+        .nav-link.active { color: #1a1a1a; font-weight: 600; }
+
+        .card-hover {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+        }
+
+        .btn-primary {
+            background: #1a1a1a;
+            color: white;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn-primary:hover { background: #333; }
+        .btn-primary:active { transform: scale(0.98); }
+
+        .btn-ghost {
+            background: transparent;
+            border: 1.5px solid #d0d0d0;
+            color: #1a1a1a;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-ghost:hover { background: #f5f5f5; border-color: #999; }
+
+        .status-sent     { background: #dcfce7; color: #15803d; }
+        .status-failed   { background: #fee2e2; color: #dc2626; }
+        .status-draft    { background: #f3f4f6; color: #6b7280; }
+        .status-sending  { background: #fef9c3; color: #a16207; }
+        .status-scheduled{ background: #dbeafe; color: #1d4ed8; }
+        .status-completed{ background: #dcfce7; color: #15803d; }
+
+        .checkbox-row:hover { background: #fafafa; }
+
+        .toast {
+            position: fixed;
+            bottom: 24px; right: 24px;
+            background: #1a1a1a;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+        }
+
+        .mobile-menu { display: none; }
+        @media (max-width: 768px) {
+            .desktop-nav { display: none; }
+            .mobile-menu-btn { display: flex; }
+            .mobile-menu.open { display: flex; }
+        }
+
+        input[type="checkbox"]:checked {
+            accent-color: #1a1a1a;
+        }
+
+        .progress-bar-animated {
+            transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+            background: linear-gradient(90deg, #1a1a1a 0%, #444 100%);
+        }
+
+        .logo-img {
+            height: 28px;
+            width: auto;
+            filter: brightness(0);
+        }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #999; }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+
+    {% if user %}
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 animate-fade-in">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-14">
+                <!-- Logo -->
+                <a href="/dashboard" class="flex-shrink-0 flex items-center animate-logo">
+                    <img src="/static/logo.png" alt="ErosMail" class="logo-img">
+                </a>
+
+                <!-- Desktop Nav -->
+                <nav class="desktop-nav hidden sm:flex sm:items-center sm:space-x-6">
+                    <a href="/dashboard" class="nav-link text-sm text-gray-500 {% if request.url.path == '/dashboard' %}active{% endif %}">Dashboard</a>
+                    <a href="/campaign/new" class="nav-link text-sm text-gray-500 {% if request.url.path == '/campaign/new' %}active{% endif %}">New Campaign</a>
+                    <a href="/contacts" class="nav-link text-sm text-gray-500 {% if '/contacts' in request.url.path %}active{% endif %}">Contacts</a>
+                    <a href="/smtp" class="nav-link text-sm text-gray-500 {% if request.url.path == '/smtp' %}active{% endif %}">SMTP</a>
+                    <a href="/reports" class="nav-link text-sm text-gray-500 {% if request.url.path == '/reports' %}active{% endif %}">Reports</a>
+                    <a href="/logs" class="nav-link text-sm text-gray-500 {% if request.url.path == '/logs' %}active{% endif %}">Logs</a>
+                </nav>
+
+                <!-- Right side -->
+                <div class="flex items-center space-x-3">
+                    <a href="/settings" class="text-gray-400 hover:text-gray-700 transition-colors" title="Settings">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                    </a>
+                    <span class="text-xs text-gray-400 hidden sm:block">{{ user.username }}</span>
+                    <a href="/logout" class="text-xs text-red-500 hover:text-red-700 font-medium transition-colors">Logout</a>
+                    <!-- Mobile hamburger -->
+                    <button type="button" aria-label="Open navigation menu" class="mobile-menu-btn sm:hidden flex items-center text-gray-500" onclick="toggleMobileMenu()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="mobile-menu flex-col border-t border-gray-100 bg-white sm:hidden px-4 py-3 space-y-2">
+            <a href="/dashboard" class="block py-2 text-sm text-gray-700">Dashboard</a>
+            <a href="/campaign/new" class="block py-2 text-sm text-gray-700">New Campaign</a>
+            <a href="/contacts" class="block py-2 text-sm text-gray-700">Contacts</a>
+            <a href="/smtp" class="block py-2 text-sm text-gray-700">SMTP Accounts</a>
+            <a href="/reports" class="block py-2 text-sm text-gray-700">Reports</a>
+            <a href="/logs" class="block py-2 text-sm text-gray-700">Logs</a>
+            <a href="/settings" class="block py-2 text-sm text-gray-700">Settings</a>
+        </div>
+    </header>
+    {% endif %}
+
+    <main class="flex-grow">
+        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer class="bg-white border-t border-gray-100 mt-auto">
+        <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+            <img src="/static/logo.png" alt="ErosMail" class="h-5 w-auto opacity-30">
+            <p class="text-xs text-gray-400">Professional Email Campaign Manager</p>
+        </div>
+    </footer>
+
+    <div id="toast-container"></div>
+
+    <script>
+        function toggleMobileMenu() {
+            const m = document.getElementById('mobile-menu');
+            m.classList.toggle('open');
+        }
+
+        function showToast(msg, type='success') {
+            const t = document.createElement('div');
+            t.className = 'toast';
+            if (type === 'error') t.style.background = '#dc2626';
+            t.textContent = msg;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(() => t.remove(), 3500);
+        }
+
+        // Select all checkbox helper
+        function toggleAllCheckboxes(source, name) {
+            const boxes = document.querySelectorAll(`input[name="${name}"]`);
+            boxes.forEach(b => b.checked = source.checked);
+            updateBulkBar();
+        }
+
+        function updateBulkBar() {
+            const checked = document.querySelectorAll('.row-check:checked').length;
+            const bar = document.getElementById('bulk-action-bar');
+            const cnt = document.getElementById('bulk-selected-count');
+            if (bar) {
+                if (checked > 0) {
+                    bar.classList.remove('hidden');
+                    if (cnt) cnt.textContent = checked;
+                } else {
+                    bar.classList.add('hidden');
+                }
+            }
+        }
+
+        document.addEventListener('change', function(e) {
+            if (e.target.classList.contains('row-check')) updateBulkBar();
+        });
+    </script>
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

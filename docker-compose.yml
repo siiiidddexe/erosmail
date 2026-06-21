@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  erosmail:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - SECRET_KEY=your-super-secret-key-change-in-production
+      - DATABASE_URL=sqlite:////app/erosmail.db
+    volumes:
+      - erosmail_data:/app/uploads
+      - erosmail_db:/app
+
+volumes:
+  erosmail_data:
+  erosmail_db:

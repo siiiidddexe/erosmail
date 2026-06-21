@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block seo_title %}Contact Bases — ErosMail{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up space-y-6">
+    <div class="flex items-center justify-between">
+        <div>
+            <h1 class="text-xl font-semibold text-gray-900">Contact Bases</h1>
+            <p class="text-sm text-gray-400 mt-0.5">Manage reusable recipient lists for your campaigns</p>
+        </div>
+        <button type="button" onclick="document.getElementById('create-modal').classList.remove('hidden')"
+            class="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            New Contact Base
+        </button>
+    </div>
+
+    {% if bases %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for base in bases %}
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 card-hover animate-fade-in-up">
+            <div class="flex items-start justify-between mb-3">
+                <div>
+                    <h3 class="text-sm font-semibold text-gray-900">{{ base.name }}</h3>
+                    {% if base.description %}
+                    <p class="text-xs text-gray-400 mt-0.5">{{ base.description }}</p>
+                    {% endif %}
+                </div>
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
+                    {{ base.contacts|length }} contacts
+                </span>
+            </div>
+            <p class="text-xs text-gray-400 mb-4">Created {{ base.created_at.strftime('%b %d, %Y') }}</p>
+            <div class="flex items-center gap-3 pt-3 border-t border-gray-100">
+                <a href="/contacts/{{ base.id }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium transition-colors">View &amp; manage</a>
+                <form method="POST" action="/contacts/{{ base.id }}/delete" class="ml-auto" onsubmit="return confirm('Delete this contact base and all its contacts?')">
+                    <button type="submit" class="text-xs text-red-500 hover:text-red-700 transition-colors">Delete</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-16 text-center">
+        <svg class="w-10 h-10 text-gray-200 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+        </svg>
+        <p class="text-sm text-gray-400 mb-4">No contact bases yet</p>
+        <button type="button" onclick="document.getElementById('create-modal').classList.remove('hidden')"
+            class="btn-primary px-4 py-2 rounded-lg text-sm font-medium">Create your first contact base</button>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create modal -->
+<div id="create-modal" class="fixed inset-0 z-50 hidden" aria-modal="true" role="dialog" aria-label="Create contact base">
+    <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" onclick="document.getElementById('create-modal').classList.add('hidden')"></div>
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md animate-fade-in-up">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                <h3 class="text-sm font-semibold text-gray-900">New Contact Base</h3>
+                <button type="button" onclick="document.getElementById('create-modal').classList.add('hidden')" aria-label="Close" class="text-gray-400 hover:text-gray-700">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form method="POST" action="/contacts/create" class="px-6 py-5 space-y-4">
+                <div>
+                    <label for="base-name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                    <input type="text" name="name" id="base-name" required placeholder="e.g. Newsletter subscribers"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div>
+                    <label for="base-desc" class="block text-sm font-medium text-gray-700 mb-1">Description <span class="text-gray-400 font-normal">(optional)</span></label>
+                    <input type="text" name="description" id="base-desc" placeholder="Short description…"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" onclick="document.getElementById('create-modal').classList.add('hidden')" class="btn-ghost px-4 py-2 rounded-lg text-sm font-medium">Cancel</button>
+                    <button type="submit" class="btn-primary px-5 py-2 rounded-lg text-sm font-medium">Create</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

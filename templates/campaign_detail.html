@@ -1,0 +1,288 @@
+{% extends "base.html" %}
+{% block seo_title %}{{ campaign.name }} — ErosMail{% endblock %}
+
+{% block extra_head %}
+<style>
+    .progress-fill { width: var(--progress-width, 0%); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in-up space-y-5">
+    <!-- Header -->
+    <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+            <a href="/dashboard" class="text-xs text-gray-400 hover:text-gray-700 transition-colors">&larr; Dashboard</a>
+            <h1 class="text-xl font-semibold text-gray-900 mt-1">{{ campaign.name }}</h1>
+            <div class="flex items-center gap-3 mt-1.5">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium status-{{ campaign.status }}">{{ campaign.status }}</span>
+                <span class="text-xs text-gray-400">Created {{ campaign.created_at.strftime('%b %d, %Y %H:%M') }}</span>
+                {% if campaign.scheduled_at %}
+                <span class="text-xs text-blue-500">Scheduled: {{ campaign.scheduled_at.strftime('%b %d %H:%M') }}</span>
+                {% endif %}
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="/campaign/{{ campaign.id }}/edit" class="btn-ghost inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                Edit
+            </a>
+            <form method="POST" action="/campaign/{{ campaign.id }}/duplicate" class="inline">
+                <button type="submit" class="btn-ghost inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                    Duplicate
+                </button>
+            </form>
+            {% if campaign.status == 'draft' %}
+            <a href="/campaign/{{ campaign.id }}/send" class="btn-primary inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                Send Campaign
+            </a>
+            {% elif campaign.status == 'completed' %}
+            <a href="/campaign/{{ campaign.id }}/send?resend_mode=failed_only" class="btn-ghost inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-orange-600 border-orange-200 hover:bg-orange-50">
+                Resend Failed
+            </a>
+            <a href="/campaign/{{ campaign.id }}/send?resend_mode=all" class="btn-ghost inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium">
+                Resend All
+            </a>
+            {% endif %}
+            <form method="POST" action="/campaign/{{ campaign.id }}/delete" onsubmit="return confirm('Delete this campaign?')" class="inline">
+                <button type="submit" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-red-500 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    Delete
+                </button>
+            </form>
+        </div>
+    </div>
+
+    {% if error is defined and error %}
+    <div class="bg-red-50 border border-red-100 rounded-xl px-5 py-4 flex items-start gap-3">
+        <svg class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        <p class="text-sm text-red-700">{{ error }}</p>
+    </div>
+    {% endif %}
+
+    <!-- Stats + details -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Total Recipients</p>
+            <p class="text-2xl font-semibold text-gray-900 mt-1">{{ campaign.total_recipients or '—' }}</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Sent</p>
+            <p class="text-2xl font-semibold text-green-600 mt-1">{{ campaign.sent_count }}</p>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5">
+            <p class="text-xs font-medium text-gray-400 uppercase tracking-wide">Failed</p>
+            <p class="text-2xl font-semibold text-red-500 mt-1">{{ campaign.failed_count }}</p>
+        </div>
+    </div>
+
+    <!-- Progress bar (while sending) -->
+    {% if campaign.status == 'sending' %}
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-5" id="progress-section">
+        <div class="flex items-center justify-between mb-3">
+            <h3 class="text-sm font-semibold text-gray-700">Sending Progress</h3>
+            <span id="progress-percent" class="text-sm font-semibold text-gray-900">0%</span>
+        </div>
+        <div class="w-full bg-gray-100 rounded-full h-2">
+            <div id="progress-bar" class="progress-bar-animated h-2 rounded-full progress-fill"></div>
+        </div>
+        <div class="flex justify-between text-xs text-gray-400 mt-2">
+            <span id="progress-text">Processing…</span>
+            <span><span class="text-green-600" id="sent-count">{{ campaign.sent_count }} sent</span> · <span class="text-red-500" id="failed-count">{{ campaign.failed_count }} failed</span></span>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Body preview -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h3 class="text-sm font-semibold text-gray-700">Email Content</h3>
+            <button type="button" onclick="toggleBodyPreview()" class="text-xs text-gray-400 hover:text-gray-700 transition-colors" id="body-toggle-btn">Expand</button>
+        </div>
+        <div class="px-6 py-4">
+            <div class="flex gap-6 mb-3">
+                <div>
+                    <p class="text-xs text-gray-400">Subject</p>
+                    <p class="text-sm text-gray-900 font-medium mt-0.5">{{ campaign.subject }}</p>
+                </div>
+                {% if campaign.contact_base %}
+                <div>
+                    <p class="text-xs text-gray-400">Contact Base</p>
+                    <a href="/contacts/{{ campaign.contact_base.id }}" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium mt-0.5 block transition-colors">{{ campaign.contact_base.name }}</a>
+                </div>
+                {% endif %}
+            </div>
+            <div id="body-preview" class="hidden mt-3">
+                <pre class="text-sm text-gray-700 whitespace-pre-wrap font-sans bg-gray-50 rounded-lg p-4 leading-relaxed">{{ campaign.body }}</pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery logs -->
+    <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <h3 class="text-sm font-semibold text-gray-700">Delivery Logs</h3>
+                <div class="flex flex-wrap items-center gap-2">
+                    <!-- Filter tabs -->
+                    <div class="flex gap-1 p-1 bg-gray-100 rounded-lg">
+                        <a href="/campaign/{{ campaign.id }}?log_filter=all" class="text-xs px-2.5 py-1 rounded-md font-medium transition-colors {% if log_filter == 'all' %}bg-white shadow-sm text-gray-700{% else %}text-gray-500 hover:text-gray-700{% endif %}">All</a>
+                        <a href="/campaign/{{ campaign.id }}?log_filter=sent" class="text-xs px-2.5 py-1 rounded-md font-medium transition-colors {% if log_filter == 'sent' %}bg-white shadow-sm text-green-700{% else %}text-gray-500 hover:text-gray-700{% endif %}">Sent</a>
+                        <a href="/campaign/{{ campaign.id }}?log_filter=failed" class="text-xs px-2.5 py-1 rounded-md font-medium transition-colors {% if log_filter == 'failed' %}bg-white shadow-sm text-red-600{% else %}text-gray-500 hover:text-gray-700{% endif %}">Failed</a>
+                    </div>
+                    <span class="text-xs text-gray-400">{{ logs|length }} entries</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk action bar -->
+        <div id="bulk-action-bar" class="hidden px-4 py-3 bg-gray-900 text-white flex items-center gap-4 text-sm">
+            <span class="text-xs"><span id="bulk-selected-count">0</span> selected</span>
+            <form method="POST" action="/campaign/{{ campaign.id }}/logs/bulk-action" id="bulk-log-form">
+                <input type="hidden" name="action" id="bulk-action-input" value="delete_selected">
+                <div id="bulk-log-ids"></div>
+                <div class="flex gap-2">
+                    <button type="button" onclick="setBulkAction('delete_selected')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-3 py-1.5 rounded-lg transition-colors">Delete selected</button>
+                </div>
+            </form>
+            <div class="border-l border-gray-700 pl-4 flex gap-2">
+                <form method="POST" action="/campaign/{{ campaign.id }}/logs/bulk-action">
+                    <input type="hidden" name="action" value="delete_failed">
+                    <button type="submit" class="text-xs text-orange-400 hover:text-orange-300 transition-colors" onclick="return confirm('Delete all failed logs?')">Delete all failed</button>
+                </form>
+                <form method="POST" action="/campaign/{{ campaign.id }}/logs/bulk-action">
+                    <input type="hidden" name="action" value="delete_all">
+                    <button type="submit" class="text-xs text-red-400 hover:text-red-300 transition-colors" onclick="return confirm('Delete ALL logs for this campaign?')">Delete all</button>
+                </form>
+            </div>
+            <button type="button" onclick="clearAllChecks()" class="ml-auto text-xs text-gray-400 hover:text-white transition-colors">Clear</button>
+        </div>
+
+        <!-- Quick select helpers -->
+        <div class="px-6 py-2 border-b border-gray-50 flex gap-3 bg-gray-50">
+            <button type="button" onclick="selectByStatus('all')" class="text-xs text-gray-500 hover:text-gray-800 transition-colors">Select all</button>
+            <button type="button" onclick="selectByStatus('failed')" class="text-xs text-red-500 hover:text-red-700 transition-colors">Select failed</button>
+            <button type="button" onclick="selectByStatus('sent')" class="text-xs text-green-600 hover:text-green-800 transition-colors">Select sent</button>
+            <button type="button" onclick="selectByStatus('none')" class="text-xs text-gray-400 hover:text-gray-600 transition-colors">Deselect all</button>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="min-w-full">
+                <thead>
+                    <tr class="border-b border-gray-100 bg-gray-50">
+                        <th class="px-4 py-3 w-8">
+                            <input type="checkbox" id="check-all-logs" aria-label="Select all logs" onchange="toggleAllLogs(this)" class="rounded border-gray-300 cursor-pointer">
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Recipient</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Status</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide hidden sm:table-cell">Sent At</th>
+                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Error</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for log in logs %}
+                    <tr class="checkbox-row hover:bg-gray-50 transition-colors" data-status="{{ log.status }}">
+                        <td class="px-4 py-3 w-8">
+                            <input type="checkbox" name="log_ids" value="{{ log.id }}" aria-label="Select log {{ log.id }}" class="row-check log-check rounded border-gray-300 cursor-pointer" onchange="syncLogIds()">
+                        </td>
+                        <td class="px-4 py-3">
+                            <p class="text-sm text-gray-900">{{ log.recipient_email }}</p>
+                            {% if log.recipient_name %}<p class="text-xs text-gray-400">{{ log.recipient_name }}</p>{% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium status-{{ log.status }}">{{ log.status }}</span>
+                        </td>
+                        <td class="px-4 py-3 hidden sm:table-cell text-xs text-gray-400">{{ log.sent_at.strftime('%b %d %H:%M:%S') }}</td>
+                        <td class="px-4 py-3 text-xs text-gray-400 max-w-xs">
+                            {% if log.error_message %}
+                            <span class="cursor-help" title="{{ log.error_message }}">{{ log.error_message[:60] }}{% if log.error_message|length > 60 %}…{% endif %}</span>
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-sm text-gray-400">No logs yet for this filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+{% if campaign.status == 'sending' %}
+<script>
+function updateProgress() {
+    fetch('/campaign/{{ campaign.id }}/progress')
+        .then(r => r.json())
+        .then(d => {
+            if (d.total > 0) {
+                document.getElementById('progress-bar').style.setProperty('--progress-width', d.progress + '%');
+                document.getElementById('progress-percent').textContent = d.progress + '%';
+                document.getElementById('progress-text').textContent = (d.sent + d.failed) + ' / ' + d.total + ' processed';
+                document.getElementById('sent-count').textContent = d.sent + ' sent';
+                document.getElementById('failed-count').textContent = d.failed + ' failed';
+            }
+            if (d.status === 'completed') setTimeout(() => location.reload(), 800);
+        });
+}
+setInterval(updateProgress, 2000);
+updateProgress();
+</script>
+{% endif %}
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function toggleBodyPreview() {
+    const el = document.getElementById('body-preview');
+    const btn = document.getElementById('body-toggle-btn');
+    const hidden = el.classList.toggle('hidden');
+    btn.textContent = hidden ? 'Expand' : 'Collapse';
+}
+
+function toggleAllLogs(src) {
+    document.querySelectorAll('.log-check').forEach(c => c.checked = src.checked);
+    syncLogIds();
+}
+
+function selectByStatus(status) {
+    document.querySelectorAll('tr[data-status]').forEach(row => {
+        const cb = row.querySelector('.log-check');
+        if (!cb) return;
+        if (status === 'all') cb.checked = true;
+        else if (status === 'none') cb.checked = false;
+        else cb.checked = row.dataset.status === status;
+    });
+    syncLogIds();
+}
+
+function syncLogIds() {
+    const checked = document.querySelectorAll('.log-check:checked');
+    const container = document.getElementById('bulk-log-ids');
+    if (!container) return;
+    container.innerHTML = '';
+    checked.forEach(c => {
+        const h = document.createElement('input');
+        h.type = 'hidden'; h.name = 'log_ids'; h.value = c.value;
+        container.appendChild(h);
+    });
+    updateBulkBar();
+}
+
+function setBulkAction(action) {
+    document.getElementById('bulk-action-input').value = action;
+    if (action === 'delete_selected') {
+        const n = document.querySelectorAll('.log-check:checked').length;
+        if (confirm(`Delete ${n} log entries?`)) document.getElementById('bulk-log-form').submit();
+    }
+}
+
+function clearAllChecks() {
+    document.querySelectorAll('.log-check, #check-all-logs').forEach(c => c.checked = false);
+    syncLogIds();
+}
+</script>
+{% endblock %}
