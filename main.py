@@ -73,6 +73,9 @@ app.add_middleware(
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
 
+UPLOAD_DIR = os.getenv("UPLOAD_DIR", "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
 
 def _parse_int(val) -> Optional[int]:
     """Convert a form string value to int, return None for empty/missing."""
@@ -205,8 +208,8 @@ async def create_campaign(
 
     template_filename = None
     if template_file and template_file.filename:
-        os.makedirs("uploads", exist_ok=True)
-        template_filename = f"uploads/{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{template_file.filename}"
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        template_filename = f"{UPLOAD_DIR}/{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{template_file.filename}"
         with open(template_filename, "wb") as f:
             f.write(await template_file.read())
 
@@ -271,8 +274,8 @@ async def edit_campaign(
     campaign.contact_base_id = contact_base_id if contact_base_id else None
 
     if template_file and template_file.filename:
-        os.makedirs("uploads", exist_ok=True)
-        template_filename = f"uploads/{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{template_file.filename}"
+        os.makedirs(UPLOAD_DIR, exist_ok=True)
+        template_filename = f"{UPLOAD_DIR}/{datetime.datetime.utcnow().strftime('%Y%m%d_%H%M%S')}_{template_file.filename}"
         with open(template_filename, "wb") as f:
             f.write(await template_file.read())
         campaign.template_file = template_filename
@@ -421,7 +424,7 @@ async def confirm_send(request: Request, campaign_id: int, resend_mode: str = "a
 
     if campaign.contact_base_id:
         recipients = _get_recipients_from_contact_base(db, campaign.contact_base_id, resend_mode, campaign_id)
-    else:
+    elif campaign.template_file:
         all_recipients, error = _parse_recipients(campaign.template_file)
         if error:
             return templates.TemplateResponse("campaign_detail.html", {
@@ -430,6 +433,11 @@ async def confirm_send(request: Request, campaign_id: int, resend_mode: str = "a
                 "error": error
             })
         recipients = _apply_resend_filter(db, all_recipients, resend_mode, campaign_id)
+    else:
+        return RedirectResponse(
+            url=f"/campaign/{campaign_id}/edit?form_error=No recipients configured. Select a contact base or upload an Excel file.",
+            status_code=302
+        )
 
     if not recipients:
         return templates.TemplateResponse("campaign_detail.html", {
@@ -469,11 +477,13 @@ async def send_campaign(
 
     if campaign.contact_base_id:
         recipients = _get_recipients_from_contact_base(db, campaign.contact_base_id, resend_mode, campaign_id)
-    else:
+    elif campaign.template_file:
         all_recipients, error = _parse_recipients(campaign.template_file)
         if error:
-            return RedirectResponse(url=f"/campaign/{campaign_id}", status_code=status.HTTP_302_FOUND)
+            return RedirectResponse(url=f"/campaign/{campaign_id}/edit?form_error={error}", status_code=302)
         recipients = _apply_resend_filter(db, all_recipients, resend_mode, campaign_id)
+    else:
+        return RedirectResponse(url=f"/campaign/{campaign_id}/edit?form_error=No recipients configured.", status_code=302)
 
     if not recipients:
         return RedirectResponse(url=f"/campaign/{campaign_id}", status_code=status.HTTP_302_FOUND)
@@ -506,16 +516,22 @@ async def send_campaign(
         smtp = smtp_accounts[smtp_index % len(smtp_accounts)]
         smtp_index += 1
 
-        personalized_body = campaign.body.replace("{name}", str(recipient.get('name', 'Valued Customer')))
-        personalized_subject = campaign.subject.replace("{name}", str(recipient.get('name', 'Valued Customer')))
+        name_val = str(recipient.get('name') or 'Valued Customer')
+        personalized_body = campaign.body.replace("{name}", name_val)
+        personalized_subject = campaign.subject.replace("{name}", name_val)
+        is_html = personalized_body.lstrip().startswith('<')
 
         msg = EmailMessage()
         msg['Subject'] = personalized_subject
         msg['From'] = smtp.username
         msg['To'] = str(recipient['email'])
-        msg.set_content(personalized_body)
-        if '<' in personalized_body and '>' in personalized_body:
+        if is_html:
+            import re as _re
+            plain = _re.sub(r'<[^>]+>', '', personalized_body).strip()
+            msg.set_content(plain or personalized_body)
             msg.add_alternative(personalized_body, subtype='html')
+        else:
+            msg.set_content(personalized_body)
 
         try:
             if smtp.provider == "nexomail":

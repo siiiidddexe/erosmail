@@ -162,8 +162,9 @@
                 <p class="text-xs text-gray-400">To: <span class="text-gray-600">Sample Recipient &lt;sample@example.com&gt;</span></p>
                 <p class="text-xs text-gray-400 mt-1">Subject: <span id="preview-subject" class="text-gray-700 font-medium"></span></p>
             </div>
-            <div class="flex-1 overflow-y-auto p-6">
-                <pre id="preview-body" class="text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed"></pre>
+            <div class="flex-1 overflow-hidden">
+                <iframe id="preview-iframe" class="w-full h-full border-0 preview-iframe" title="Email preview"></iframe>
+                <pre id="preview-body" class="hidden text-sm text-gray-800 whitespace-pre-wrap font-sans leading-relaxed p-6"></pre>
             </div>
         </div>
     </div>
@@ -238,10 +239,21 @@ function updateFileLabel(input) {
 }
 
 function previewEmail() {
-    const subject = document.getElementById('subject').value || '(no subject)';
+    const subject = (document.getElementById('subject').value || '(no subject)').replace(/\{name\}/g, 'Sample Name');
     const body = (document.getElementById('body').value || '(no body)').replace(/\{name\}/g, 'Sample Name');
-    document.getElementById('preview-subject').textContent = subject.replace(/\{name\}/g, 'Sample Name');
-    document.getElementById('preview-body').textContent = body;
+    document.getElementById('preview-subject').textContent = subject;
+    const isHtml = body.trimStart().startsWith('<');
+    const iframe = document.getElementById('preview-iframe');
+    const pre = document.getElementById('preview-body');
+    if (isHtml) {
+        iframe.classList.remove('hidden');
+        pre.classList.add('hidden');
+        iframe.srcdoc = body;
+    } else {
+        pre.classList.remove('hidden');
+        iframe.classList.add('hidden');
+        pre.textContent = body;
+    }
     document.getElementById('preview-modal').classList.remove('hidden');
 }
 

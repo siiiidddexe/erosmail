@@ -7,11 +7,10 @@ services:
       - "8000:8000"
     environment:
       - SECRET_KEY=your-super-secret-key-change-in-production
-      - DATABASE_URL=sqlite:////app/erosmail.db
+      - DATABASE_URL=sqlite:////data/erosmail.db
+      - UPLOAD_DIR=/data/uploads
     volumes:
-      - erosmail_data:/app/uploads
-      - erosmail_db:/app
+      - erosmail_data:/data
 
 volumes:
   erosmail_data:
-  erosmail_db:

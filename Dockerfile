@@ -14,8 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application code
 COPY . .
 
-# Create uploads directory
-RUN mkdir -p uploads
+# Create persistent data directory (will be overridden by volume mount)
+RUN mkdir -p /data/uploads
 
 # Expose port
 EXPOSE 8000
