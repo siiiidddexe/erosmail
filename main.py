@@ -487,10 +487,12 @@ async def send_campaign(
                     if not data.get("success"):
                         raise Exception(data.get("error", "NexoMailer API failed"))
             else:
-                kwargs = dict(hostname=smtp.host, port=smtp.port, username=smtp.username, password=smtp.password, timeout=30)
+                kwargs = dict(hostname=smtp.host, port=smtp.port,
+                              username=smtp.username, password=smtp.password,
+                              timeout=30, validate_certs=False)
                 if smtp.port == 465:
                     kwargs['use_tls'] = True
-                else:
+                elif smtp.port in (587, 2525):
                     kwargs['start_tls'] = True
                 await aiosmtplib.send(msg, **kwargs)
 
@@ -615,15 +617,89 @@ async def add_smtp(
     provider: str = Form("smtp"),
     host: str = Form(None),
     port: int = Form(None),
-    username: str = Form(None),
-    password: str = Form(None),
+    smtp_username: str = Form(None),
+    smtp_password: str = Form(None),
+    nexo_username: str = Form(None),
+    nexo_password: str = Form(None),
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
-    account = SMTPAccount(user_id=user.id, name=name, provider=provider, host=host, port=port, username=username, password=password, is_active=True)
+    if provider == "nexomail":
+        username, password = nexo_username, nexo_password
+        host, port = None, None
+    else:
+        username, password = smtp_username, smtp_password
+    account = SMTPAccount(user_id=user.id, name=name, provider=provider,
+                          host=host, port=port, username=username, password=password, is_active=True)
     db.add(account)
     db.commit()
-    return RedirectResponse(url="/smtp", status_code=status.HTTP_302_FOUND)
+    return RedirectResponse(url="/smtp?added=1", status_code=status.HTTP_302_FOUND)
+
+@app.post("/smtp/{account_id}/edit")
+async def edit_smtp(
+    request: Request,
+    account_id: int,
+    name: str = Form(...),
+    host: str = Form(None),
+    port: int = Form(None),
+    smtp_username: str = Form(None),
+    smtp_password: str = Form(None),
+    nexo_username: str = Form(None),
+    nexo_password: str = Form(None),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    account = db.query(SMTPAccount).filter(SMTPAccount.id == account_id, SMTPAccount.user_id == user.id).first()
+    if account:
+        account.name = name
+        if account.provider == "nexomail":
+            if nexo_username: account.username = nexo_username
+            if nexo_password: account.password = nexo_password
+        else:
+            account.host = host
+            account.port = port
+            if smtp_username: account.username = smtp_username
+            if smtp_password: account.password = smtp_password
+        db.commit()
+    return RedirectResponse(url="/smtp?saved=1", status_code=status.HTTP_302_FOUND)
+
+@app.post("/smtp/{account_id}/test")
+async def test_smtp(
+    request: Request,
+    account_id: int,
+    to_email: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    user = get_current_user(request, db)
+    account = db.query(SMTPAccount).filter(SMTPAccount.id == account_id, SMTPAccount.user_id == user.id).first()
+    if not account:
+        return JSONResponse({"error": "Account not found"}, status_code=404)
+    try:
+        if account.provider == "nexomail":
+            headers = {"Content-Type": "application/json", "X-API-Key": account.password or ""}
+            payload = {"to": to_email, "subject": "ErosMail Test", "html": "<p>Test email from ErosMail.</p>", "app_name": account.username or "ErosMail"}
+            async with httpx.AsyncClient() as client:
+                r = await client.post("https://nexomail.logiclaunch.in/api/send", json=payload, headers=headers, timeout=15.0)
+                data = r.json()
+                if r.status_code != 200 or not data.get("success"):
+                    raise Exception(data.get("error") or data.get("message") or f"HTTP {r.status_code}")
+        else:
+            msg = EmailMessage()
+            msg["Subject"] = "ErosMail Test"
+            msg["From"] = account.username
+            msg["To"] = to_email
+            msg.set_content("Test email from ErosMail. If you received this, your SMTP settings are correct.")
+            kwargs = dict(hostname=account.host, port=account.port,
+                          username=account.username, password=account.password,
+                          timeout=20, validate_certs=False)
+            if account.port == 465:
+                kwargs["use_tls"] = True
+            elif account.port in (587, 2525):
+                kwargs["start_tls"] = True
+            await aiosmtplib.send(msg, **kwargs)
+        return JSONResponse({"success": True})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
 
 @app.post("/smtp/{account_id}/delete")
 async def delete_smtp(request: Request, account_id: int, db: Session = Depends(get_db)):

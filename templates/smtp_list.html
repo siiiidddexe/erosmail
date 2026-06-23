@@ -10,10 +10,17 @@
         </div>
         <button type="button" onclick="document.getElementById('add-form').scrollIntoView({behavior:'smooth'})"
             class="btn-primary inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
             Add Account
         </button>
     </div>
+
+    {% if request.query_params.get('added') %}
+    <div class="bg-green-50 border border-green-100 text-green-700 rounded-xl px-4 py-3 text-sm">Account added successfully.</div>
+    {% endif %}
+    {% if request.query_params.get('saved') %}
+    <div class="bg-green-50 border border-green-100 text-green-700 rounded-xl px-4 py-3 text-sm">Account updated.</div>
+    {% endif %}
 
     <!-- Existing accounts -->
     {% if accounts %}
@@ -21,65 +28,65 @@
         <div class="px-6 py-4 border-b border-gray-100">
             <h2 class="text-sm font-semibold text-gray-700">Your Accounts</h2>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full">
-                <thead>
-                    <tr class="border-b border-gray-100 bg-gray-50">
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Name</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide hidden sm:table-cell">Host / Provider</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide hidden md:table-cell">Username</th>
-                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wide">Status</th>
-                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-400 uppercase tracking-wide">Actions</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-50">
-                    {% for account in accounts %}
-                    <tr class="hover:bg-gray-50 transition-colors">
-                        <td class="px-4 py-3">
-                            <p class="text-sm font-medium text-gray-900">{{ account.name }}</p>
-                            <p class="text-xs text-gray-400">{{ account.provider }}</p>
-                        </td>
-                        <td class="px-4 py-3 hidden sm:table-cell text-sm text-gray-600">
-                            {% if account.provider == 'nexomail' %}NexoMailer API
-                            {% else %}{{ account.host }}{% if account.port %}:{{ account.port }}{% endif %}{% endif %}
-                        </td>
-                        <td class="px-4 py-3 hidden md:table-cell text-sm text-gray-600">{{ account.username or '—' }}</td>
-                        <td class="px-4 py-3">
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {% if account.is_active %}status-completed{% else %}status-draft{% endif %}">
+        <div class="divide-y divide-gray-50">
+            {% for account in accounts %}
+            <div class="px-6 py-4">
+                <div class="flex items-center justify-between gap-4">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <p class="text-sm font-semibold text-gray-900">{{ account.name }}</p>
+                            <span class="text-xs px-2 py-0.5 rounded-full font-medium
+                                {% if account.provider == 'nexomail' %}bg-purple-100 text-purple-700
+                                {% else %}bg-blue-100 text-blue-700{% endif %}">
+                                {{ 'NexoMailer API' if account.provider == 'nexomail' else 'SMTP' }}
+                            </span>
+                            <span class="text-xs px-2 py-0.5 rounded-full font-medium
+                                {% if account.is_active %}status-completed{% else %}status-draft{% endif %}">
                                 {{ 'Active' if account.is_active else 'Disabled' }}
                             </span>
-                        </td>
-                        <td class="px-4 py-3 text-right">
-                            <div class="flex items-center justify-end gap-3">
-                                <form method="POST" action="/smtp/{{ account.id }}/toggle" class="inline">
-                                    <button type="submit" class="text-xs {% if account.is_active %}text-yellow-600 hover:text-yellow-800{% else %}text-green-600 hover:text-green-800{% endif %} font-medium transition-colors">
-                                        {{ 'Disable' if account.is_active else 'Enable' }}
-                                    </button>
-                                </form>
-                                <form method="POST" action="/smtp/{{ account.id }}/delete" class="inline" onsubmit="return confirm('Delete this SMTP account?')">
-                                    <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-medium transition-colors">Delete</button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                        </div>
+                        <p class="text-xs text-gray-400 mt-0.5">
+                            {% if account.provider == 'nexomail' %}
+                                App: {{ account.username or '—' }} · API key: ••••••••
+                            {% else %}
+                                {{ account.host or '—' }}{% if account.port %}:{{ account.port }}{% endif %} · {{ account.username or '—' }}
+                            {% endif %}
+                        </p>
+                    </div>
+                    <div class="flex items-center gap-3 flex-shrink-0">
+                        <button type="button"
+                            onclick="openTest({{ account.id }}, '{{ account.name | replace("'","\\'" ) }}')"
+                            class="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors">Test</button>
+                        <button type="button"
+                            onclick="openEdit({{ account.id }}, '{{ account.name | replace("'","\\'") }}', '{{ account.provider }}', '{{ account.host or "" }}', {{ account.port or 'null' }}, '{{ account.username or "" }}')"
+                            class="text-xs text-gray-600 hover:text-gray-800 font-medium transition-colors">Edit</button>
+                        <form method="POST" action="/smtp/{{ account.id }}/toggle" class="inline">
+                            <button type="submit" class="text-xs {% if account.is_active %}text-yellow-600 hover:text-yellow-800{% else %}text-green-600 hover:text-green-800{% endif %} font-medium transition-colors">
+                                {{ 'Disable' if account.is_active else 'Enable' }}
+                            </button>
+                        </form>
+                        <form method="POST" action="/smtp/{{ account.id }}/delete" class="inline"
+                              onsubmit="return confirm('Delete {{ account.name }}?')">
+                            <button type="submit" class="text-xs text-red-500 hover:text-red-700 font-medium transition-colors">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
         </div>
     </div>
     {% endif %}
 
     <!-- Add account form -->
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden" id="add-form">
-        <!-- Presets -->
         <div class="px-6 py-4 border-b border-gray-100">
             <h2 class="text-sm font-semibold text-gray-700 mb-3">Add Account</h2>
             <div class="flex flex-wrap gap-2">
                 <p class="text-xs text-gray-400 self-center mr-1">Quick presets:</p>
                 <button type="button" onclick="fillPreset('hostinger')" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">Hostinger</button>
-                <button type="button" onclick="fillPreset('google')" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">Gmail</button>
+                <button type="button" onclick="fillPreset('google')"    class="btn-ghost text-xs px-3 py-1.5 rounded-lg">Gmail</button>
                 <button type="button" onclick="fillPreset('starwarlt')" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">Starwarlt</button>
-                <button type="button" onclick="fillPreset('nexomail')" class="btn-ghost text-xs px-3 py-1.5 rounded-lg">NexoMailer</button>
+                <button type="button" onclick="fillPreset('nexomail')"  class="btn-ghost text-xs px-3 py-1.5 rounded-lg">NexoMailer</button>
             </div>
         </div>
 
@@ -92,7 +99,7 @@
                 </div>
                 <div>
                     <label for="provider" class="block text-sm font-medium text-gray-700 mb-1">Provider</label>
-                    <select name="provider" id="provider" title="Select provider type" onchange="toggleProviderFields()"
+                    <select name="provider" id="provider" title="Provider type" onchange="toggleProviderFields()"
                         class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 bg-white">
                         <option value="smtp">Standard SMTP</option>
                         <option value="nexomail">NexoMailer API</option>
@@ -100,7 +107,7 @@
                 </div>
             </div>
 
-            <!-- SMTP fields -->
+            <!-- SMTP fields — unique name attributes -->
             <div id="smtp-fields" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                     <label for="host" class="block text-sm font-medium text-gray-700 mb-1">SMTP Host</label>
@@ -108,33 +115,40 @@
                         class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                 </div>
                 <div>
-                    <label for="port" class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                    <label for="port" class="block text-sm font-medium text-gray-700 mb-1">Port
+                        <span class="font-normal text-gray-400">(465 SSL · 587 TLS · 25 plain)</span>
+                    </label>
                     <input type="number" name="port" id="port" placeholder="587"
                         class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                 </div>
                 <div>
-                    <label for="username" class="block text-sm font-medium text-gray-700 mb-1">Username / Email</label>
-                    <input type="text" name="username" id="username" placeholder="sender@example.com"
+                    <label for="smtp_username" class="block text-sm font-medium text-gray-700 mb-1">Username / Email</label>
+                    <input type="text" name="smtp_username" id="smtp_username" placeholder="sender@example.com"
+                        autocomplete="username"
                         class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                 </div>
                 <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <input type="password" name="password" id="password" placeholder="••••••••"
+                    <label for="smtp_password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                    <input type="password" name="smtp_password" id="smtp_password" placeholder="••••••••"
+                        autocomplete="current-password"
                         class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                 </div>
             </div>
 
-            <!-- NexoMailer fields -->
+            <!-- NexoMailer fields — different name attributes -->
             <div id="nexomail-fields" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                    <label for="nm_username" class="block text-sm font-medium text-gray-700 mb-1">App / Sender Name</label>
-                    <input type="text" name="username" id="nm_username" placeholder="MyStore"
+                    <label for="nexo_username" class="block text-sm font-medium text-gray-700 mb-1">App / Sender Name</label>
+                    <input type="text" name="nexo_username" id="nexo_username" placeholder="MyStore"
                         class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
                 </div>
                 <div>
-                    <label for="nm_password" class="block text-sm font-medium text-gray-700 mb-1">NexoMailer API Key</label>
-                    <input type="password" name="password" id="nm_password" placeholder="nxm_…"
+                    <label for="nexo_password" class="block text-sm font-medium text-gray-700 mb-1">NexoMailer API Key</label>
+                    <input type="password" name="nexo_password" id="nexo_password" placeholder="nxm_…"
                         class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div class="sm:col-span-2">
+                    <p class="text-xs text-gray-400">Get your API key from the NexoMailer dashboard. The app/sender name is shown in email headers.</p>
                 </div>
             </div>
 
@@ -145,6 +159,82 @@
     </div>
 </div>
 
+<!-- Test modal -->
+<div id="test-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40" onclick="closeTest()"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4 animate-fade-in-up">
+        <h2 class="text-base font-semibold text-gray-900" id="test-modal-title">Test Account</h2>
+        <p class="text-sm text-gray-500">Send a test email to verify your configuration.</p>
+        <div>
+            <label for="test-to-email" class="block text-sm font-medium text-gray-700 mb-1">Send test to</label>
+            <input type="email" id="test-to-email" placeholder="you@example.com"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+        </div>
+        <div id="test-result-msg" class="hidden text-sm rounded-lg px-3 py-2.5"></div>
+        <div class="flex gap-3 justify-end">
+            <button type="button" onclick="closeTest()" class="btn-ghost px-4 py-2 rounded-lg text-sm">Cancel</button>
+            <button type="button" onclick="runTest()" id="test-send-btn" class="btn-primary px-4 py-2 rounded-lg text-sm">Send Test</button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit modal -->
+<div id="edit-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div class="absolute inset-0 bg-black/40" onclick="closeEdit()"></div>
+    <div class="relative bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 animate-fade-in-up">
+        <h2 class="text-base font-semibold text-gray-900 mb-4">Edit Account</h2>
+        <form id="edit-form" method="POST" class="space-y-4">
+            <div>
+                <label for="edit-name" class="block text-sm font-medium text-gray-700 mb-1">Account Name</label>
+                <input type="text" name="name" id="edit-name" required
+                    class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+            </div>
+
+            <!-- SMTP edit fields -->
+            <div id="edit-smtp-fields" class="grid grid-cols-2 gap-3">
+                <div>
+                    <label for="edit-host" class="block text-sm font-medium text-gray-700 mb-1">Host</label>
+                    <input type="text" name="host" id="edit-host"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div>
+                    <label for="edit-port" class="block text-sm font-medium text-gray-700 mb-1">Port</label>
+                    <input type="number" name="port" id="edit-port"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div>
+                    <label for="edit-smtp-username" class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+                    <input type="text" name="smtp_username" id="edit-smtp-username" autocomplete="off"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div>
+                    <label for="edit-smtp-password" class="block text-sm font-medium text-gray-700 mb-1">New Password <span class="font-normal text-gray-400">(leave blank to keep)</span></label>
+                    <input type="password" name="smtp_password" id="edit-smtp-password" autocomplete="new-password"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+            </div>
+
+            <!-- NexoMailer edit fields -->
+            <div id="edit-nexo-fields" class="hidden grid grid-cols-1 gap-3">
+                <div>
+                    <label for="edit-nexo-username" class="block text-sm font-medium text-gray-700 mb-1">App / Sender Name</label>
+                    <input type="text" name="nexo_username" id="edit-nexo-username"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+                <div>
+                    <label for="edit-nexo-password" class="block text-sm font-medium text-gray-700 mb-1">API Key <span class="font-normal text-gray-400">(leave blank to keep)</span></label>
+                    <input type="password" name="nexo_password" id="edit-nexo-password"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                </div>
+            </div>
+
+            <div class="flex gap-3 justify-end pt-2">
+                <button type="button" onclick="closeEdit()" class="btn-ghost px-4 py-2 rounded-lg text-sm">Cancel</button>
+                <button type="submit" class="btn-primary px-4 py-2 rounded-lg text-sm">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_scripts %}
@@ -164,8 +254,8 @@ function fillPreset(key) {
     if (p.host) document.getElementById('host').value = p.host;
     if (p.port) document.getElementById('port').value = p.port;
     toggleProviderFields();
-    if (p.provider === 'smtp') document.getElementById('username').focus();
-    else document.getElementById('nm_username').focus();
+    if (p.provider === 'smtp') document.getElementById('smtp_username').focus();
+    else document.getElementById('nexo_username').focus();
 }
 
 function toggleProviderFields() {
@@ -175,5 +265,83 @@ function toggleProviderFields() {
 }
 
 document.addEventListener('DOMContentLoaded', toggleProviderFields);
+
+// ── Test modal ──────────────────────────────────────────
+let testAccountId = null;
+
+function openTest(id, name) {
+    testAccountId = id;
+    document.getElementById('test-modal-title').textContent = 'Test: ' + name;
+    document.getElementById('test-to-email').value = '';
+    document.getElementById('test-result-msg').className = 'hidden text-sm rounded-lg px-3 py-2.5';
+    document.getElementById('test-result-msg').textContent = '';
+    document.getElementById('test-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('test-to-email').focus(), 50);
+}
+
+function closeTest() {
+    document.getElementById('test-modal').classList.add('hidden');
+    testAccountId = null;
+}
+
+async function runTest() {
+    if (!testAccountId) return;
+    const email = document.getElementById('test-to-email').value.trim();
+    if (!email) { document.getElementById('test-to-email').focus(); return; }
+
+    const btn = document.getElementById('test-send-btn');
+    const resultEl = document.getElementById('test-result-msg');
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    resultEl.className = 'hidden text-sm rounded-lg px-3 py-2.5';
+
+    const fd = new FormData();
+    fd.append('to_email', email);
+
+    try {
+        const res = await fetch(`/smtp/${testAccountId}/test`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.success) {
+            resultEl.className = 'text-sm rounded-lg px-3 py-2.5 bg-green-50 text-green-700 border border-green-100';
+            resultEl.textContent = '✓ Test email sent successfully!';
+        } else {
+            resultEl.className = 'text-sm rounded-lg px-3 py-2.5 bg-red-50 text-red-700 border border-red-100';
+            resultEl.textContent = '✗ ' + (data.error || 'Failed');
+        }
+    } catch (e) {
+        resultEl.className = 'text-sm rounded-lg px-3 py-2.5 bg-red-50 text-red-700 border border-red-100';
+        resultEl.textContent = '✗ Network error: ' + e.message;
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Send Test';
+    }
+}
+
+document.getElementById('test-to-email').addEventListener('keydown', e => {
+    if (e.key === 'Enter') runTest();
+});
+
+// ── Edit modal ──────────────────────────────────────────
+function openEdit(id, name, provider, host, port, username) {
+    document.getElementById('edit-form').action = `/smtp/${id}/edit`;
+    document.getElementById('edit-name').value = name;
+    document.getElementById('edit-host').value = host || '';
+    document.getElementById('edit-port').value = port || '';
+    document.getElementById('edit-smtp-username').value = provider !== 'nexomail' ? (username || '') : '';
+    document.getElementById('edit-smtp-password').value = '';
+    document.getElementById('edit-nexo-username').value = provider === 'nexomail' ? (username || '') : '';
+    document.getElementById('edit-nexo-password').value = '';
+
+    const isNexo = provider === 'nexomail';
+    document.getElementById('edit-smtp-fields').classList.toggle('hidden', isNexo);
+    document.getElementById('edit-nexo-fields').classList.toggle('hidden', !isNexo);
+
+    document.getElementById('edit-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('edit-name').focus(), 50);
+}
+
+function closeEdit() {
+    document.getElementById('edit-modal').classList.add('hidden');
+}
 </script>
 {% endblock %}
