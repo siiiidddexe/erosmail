@@ -1,6 +1,7 @@
 import os
 import json
 from fastapi import FastAPI, Depends, HTTPException, status, Request, Form, File, UploadFile
+from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, RedirectResponse, StreamingResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -71,6 +72,44 @@ app.add_middleware(
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 templates = Jinja2Templates(directory="templates")
+
+
+def _parse_int(val) -> Optional[int]:
+    """Convert a form string value to int, return None for empty/missing."""
+    if val is None:
+        return None
+    s = str(val).strip()
+    return int(s) if s else None
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError):
+    msgs = []
+    for err in exc.errors():
+        field = str(err["loc"][-1]) if err["loc"] else "field"
+        msgs.append(f"{field}: {err['msg']}")
+    error_text = " · ".join(msgs)
+    referer = request.headers.get("referer", "/dashboard")
+    sep = "&" if "?" in referer else "?"
+    return RedirectResponse(url=f"{referer}{sep}form_error={error_text}", status_code=302)
+
+
+@app.exception_handler(Exception)
+async def generic_error_handler(request: Request, exc: Exception):
+    if isinstance(exc, HTTPException):
+        raise exc
+    return HTMLResponse(
+        content=f"""<!DOCTYPE html><html><head><title>Error</title>
+        <script src="https://cdn.tailwindcss.com"></script></head>
+        <body class="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+        <div class="bg-white rounded-2xl shadow p-8 max-w-md w-full text-center space-y-4">
+            <p class="text-4xl">⚠️</p>
+            <h1 class="text-lg font-semibold text-gray-900">Something went wrong</h1>
+            <p class="text-sm text-red-600 bg-red-50 rounded-lg px-4 py-3 text-left font-mono">{exc}</p>
+            <a href="javascript:history.back()" class="inline-block mt-2 text-sm text-blue-600 hover:underline">← Go back</a>
+        </div></body></html>""",
+        status_code=500,
+    )
 
 
 def get_user_setting(db: Session, user_id: int, key: str, default: str = "") -> str:
@@ -155,12 +194,14 @@ async def create_campaign(
     name: str = Form(...),
     subject: str = Form(...),
     body: str = Form(...),
-    smtp_ids: list[int] = Form(...),
+    smtp_ids: list[str] = Form(default=[]),
     template_file: UploadFile = File(None),
-    contact_base_id: int = Form(None),
+    contact_base_id: str = Form(None),
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
+    smtp_ids = [int(x) for x in smtp_ids if x.strip()]
+    contact_base_id = _parse_int(contact_base_id)
 
     template_filename = None
     if template_file and template_file.filename:
@@ -212,12 +253,14 @@ async def edit_campaign(
     name: str = Form(...),
     subject: str = Form(...),
     body: str = Form(...),
-    smtp_ids: list[int] = Form(...),
+    smtp_ids: list[str] = Form(default=[]),
     template_file: UploadFile = File(None),
-    contact_base_id: int = Form(None),
+    contact_base_id: str = Form(None),
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
+    smtp_ids = [int(x) for x in smtp_ids if x.strip()]
+    contact_base_id = _parse_int(contact_base_id)
     campaign = db.query(Campaign).filter(Campaign.id == campaign_id, Campaign.user_id == user.id).first()
     if not campaign:
         raise HTTPException(status_code=404, detail="Campaign not found")
@@ -616,7 +659,7 @@ async def add_smtp(
     name: str = Form(...),
     provider: str = Form("smtp"),
     host: str = Form(None),
-    port: int = Form(None),
+    port: str = Form(None),
     smtp_username: str = Form(None),
     smtp_password: str = Form(None),
     nexo_username: str = Form(None),
@@ -626,11 +669,12 @@ async def add_smtp(
     user = get_current_user(request, db)
     if provider == "nexomail":
         username, password = nexo_username, nexo_password
-        host, port = None, None
+        host, port_int = None, None
     else:
         username, password = smtp_username, smtp_password
+        port_int = _parse_int(port)
     account = SMTPAccount(user_id=user.id, name=name, provider=provider,
-                          host=host, port=port, username=username, password=password, is_active=True)
+                          host=host, port=port_int, username=username, password=password, is_active=True)
     db.add(account)
     db.commit()
     return RedirectResponse(url="/smtp?added=1", status_code=status.HTTP_302_FOUND)
@@ -641,7 +685,7 @@ async def edit_smtp(
     account_id: int,
     name: str = Form(...),
     host: str = Form(None),
-    port: int = Form(None),
+    port: str = Form(None),
     smtp_username: str = Form(None),
     smtp_password: str = Form(None),
     nexo_username: str = Form(None),
@@ -657,7 +701,7 @@ async def edit_smtp(
             if nexo_password: account.password = nexo_password
         else:
             account.host = host
-            account.port = port
+            account.port = _parse_int(port)
             if smtp_username: account.username = smtp_username
             if smtp_password: account.password = smtp_password
         db.commit()
