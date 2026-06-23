@@ -41,6 +41,12 @@ try:
         log_columns = [row[1] for row in result2]
         if 'recipient_name' not in log_columns:
             conn.execute(text("ALTER TABLE email_logs ADD COLUMN recipient_name TEXT"))
+
+        result3 = conn.execute(text("PRAGMA table_info(smtp_accounts)"))
+        smtp_columns = [row[1] for row in result3]
+        if 'provider' not in smtp_columns:
+            conn.execute(text("ALTER TABLE smtp_accounts ADD COLUMN provider TEXT DEFAULT 'smtp'"))
+
         conn.commit()
 except Exception as e:
     print(f"Migration note: {e}")
