@@ -842,10 +842,10 @@ _OPENROUTER_FALLBACKS = [
     "deepseek/deepseek-chat:free",
 ]
 _GEMINI_FALLBACKS = [
-    "gemini-2.0-flash-001",
-    "gemini-2.0-flash-lite",
+    "gemini-2.5-flash",
+    "gemini-2.5-pro",
+    "gemini-2.0-flash-exp",
     "gemini-1.5-flash",
-    "gemini-1.5-flash-001",
     "gemini-1.5-pro",
 ]
 
@@ -933,7 +933,7 @@ async def ai_generate(
 
     # 2. Gemini direct — try preferred model then fallbacks
     if gem_key:
-        preferred = get_user_setting(db, user.id, "gemini_model", _GEMINI_FALLBACKS[0])
+        preferred = get_user_setting(db, user.id, "gemini_model", "gemini-2.5-flash")
         gem_models = [preferred] + [m for m in _GEMINI_FALLBACKS if m != preferred]
         for model in gem_models:
             try:
