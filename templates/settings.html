@@ -5,94 +5,169 @@
 <div class="max-w-2xl mx-auto animate-fade-in-up space-y-6">
     <div>
         <h1 class="text-xl font-semibold text-gray-900">Settings</h1>
-        <p class="text-sm text-gray-400 mt-0.5">Configure AI writing and API integrations</p>
+        <p class="text-sm text-gray-400 mt-0.5">Configure AI writing assistants — at least one provider key is required</p>
     </div>
 
     {% if request.query_params.get('saved') %}
     <div class="bg-green-50 border border-green-100 text-green-700 rounded-xl px-4 py-3 text-sm flex items-center gap-2">
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-        Settings saved successfully.
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        Settings saved.
     </div>
     {% endif %}
 
+    <!-- Active provider banner -->
+    <div class="rounded-xl border px-5 py-4 flex items-center gap-3
+        {% if active_provider == 'none' %}bg-red-50 border-red-100{% else %}bg-gray-50 border-gray-100{% endif %}">
+        {% if active_provider == 'openrouter' %}
+        <span class="w-2.5 h-2.5 rounded-full bg-green-500 flex-shrink-0"></span>
+        <div>
+            <p class="text-sm font-medium text-gray-800">OpenRouter is active <span class="text-gray-400 font-normal">(primary)</span></p>
+            <p class="text-xs text-gray-400">Gemini direct is configured as fallback if OpenRouter fails.</p>
+        </div>
+        {% elif active_provider == 'gemini' %}
+        <span class="w-2.5 h-2.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+        <div>
+            <p class="text-sm font-medium text-gray-800">Gemini direct is active</p>
+            <p class="text-xs text-gray-400">Add an OpenRouter key to enable more free models.</p>
+        </div>
+        {% else %}
+        <span class="w-2.5 h-2.5 rounded-full bg-red-400 flex-shrink-0"></span>
+        <div>
+            <p class="text-sm font-medium text-red-700">No AI provider configured</p>
+            <p class="text-xs text-red-400">Add at least one key below to enable AI email writing.</p>
+        </div>
+        {% endif %}
+    </div>
+
     <form method="POST" action="/settings" class="space-y-5">
 
-        <!-- OpenRouter -->
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100">
+        <!-- ── OpenRouter ─────────────────────────────────────── -->
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden
+            {% if openrouter_key %}border-green-200{% else %}border-gray-100{% endif %}">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                        <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     </div>
                     <div>
-                        <h2 class="text-sm font-semibold text-gray-700">OpenRouter API Key</h2>
-                        <p class="text-xs text-gray-400">Powers AI subject &amp; body generation. Free models available.</p>
+                        <h2 class="text-sm font-semibold text-gray-700">OpenRouter
+                            <span class="ml-1.5 text-xs font-normal px-1.5 py-0.5 rounded-full {% if openrouter_key %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                {% if openrouter_key %}configured{% else %}not set{% endif %}
+                            </span>
+                        </h2>
+                        <p class="text-xs text-gray-400">Primary provider · many free models · openrouter.ai/keys</p>
                     </div>
                 </div>
+                <span class="text-xs bg-indigo-50 text-indigo-600 px-2 py-1 rounded-md font-medium">Priority 1</span>
             </div>
             <div class="px-6 py-5 space-y-4">
                 <div>
                     <label for="openrouter_api_key" class="block text-sm font-medium text-gray-700 mb-1">API Key</label>
-                    <input type="password" name="openrouter_api_key" id="openrouter_api_key"
-                        value="{{ openrouter_key }}"
-                        placeholder="sk-or-…"
-                        title="OpenRouter API key"
-                        autocomplete="off"
-                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 font-mono">
-                    <p class="text-xs text-gray-400 mt-1">Get a free key at openrouter.ai → Keys</p>
+                    <div class="relative">
+                        <input type="password" name="openrouter_api_key" id="openrouter_api_key"
+                            value="{{ openrouter_key }}"
+                            placeholder="sk-or-v1-…"
+                            title="OpenRouter API key"
+                            autocomplete="off"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 font-mono">
+                        <button type="button" onclick="toggleVis('openrouter_api_key', this)" aria-label="Show/hide key"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                    </div>
                 </div>
                 <div>
-                    <label for="ai_model" class="block text-sm font-medium text-gray-700 mb-1">Model</label>
-                    <select name="ai_model" id="ai_model" title="Select AI model" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 bg-white">
-                        <option value="google/gemini-2.0-flash-exp:free" {% if ai_model == 'google/gemini-2.0-flash-exp:free' %}selected{% endif %}>Gemini 2.0 Flash (free)</option>
-                        <option value="google/gemini-flash-1.5:free" {% if ai_model == 'google/gemini-flash-1.5:free' %}selected{% endif %}>Gemini Flash 1.5 (free)</option>
-                        <option value="meta-llama/llama-3.3-70b-instruct:free" {% if ai_model == 'meta-llama/llama-3.3-70b-instruct:free' %}selected{% endif %}>Llama 3.3 70B (free)</option>
-                        <option value="mistralai/mistral-7b-instruct:free" {% if ai_model == 'mistralai/mistral-7b-instruct:free' %}selected{% endif %}>Mistral 7B (free)</option>
-                        <option value="deepseek/deepseek-chat:free" {% if ai_model == 'deepseek/deepseek-chat:free' %}selected{% endif %}>DeepSeek Chat (free)</option>
-                        <option value="anthropic/claude-haiku-4-5-20251001" {% if ai_model == 'anthropic/claude-haiku-4-5-20251001' %}selected{% endif %}>Claude Haiku 4.5 (paid)</option>
+                    <label for="ai_model" class="block text-sm font-medium text-gray-700 mb-1">Model (via OpenRouter)</label>
+                    <select name="ai_model" id="ai_model" title="OpenRouter model to use"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 bg-white">
+                        <option value="google/gemini-2.0-flash-exp:free"      {% if ai_model == 'google/gemini-2.0-flash-exp:free' %}selected{% endif %}>Gemini 2.0 Flash — free ⭐</option>
+                        <option value="google/gemini-2.5-flash-preview:free"  {% if ai_model == 'google/gemini-2.5-flash-preview:free' %}selected{% endif %}>Gemini 2.5 Flash Preview — free</option>
+                        <option value="google/gemini-flash-1.5:free"          {% if ai_model == 'google/gemini-flash-1.5:free' %}selected{% endif %}>Gemini 1.5 Flash — free</option>
+                        <option value="meta-llama/llama-3.3-70b-instruct:free"{% if ai_model == 'meta-llama/llama-3.3-70b-instruct:free' %}selected{% endif %}>Llama 3.3 70B — free</option>
+                        <option value="mistralai/mistral-7b-instruct:free"    {% if ai_model == 'mistralai/mistral-7b-instruct:free' %}selected{% endif %}>Mistral 7B — free</option>
+                        <option value="deepseek/deepseek-chat:free"           {% if ai_model == 'deepseek/deepseek-chat:free' %}selected{% endif %}>DeepSeek Chat — free</option>
+                        <option value="anthropic/claude-haiku-4-5-20251001"   {% if ai_model == 'anthropic/claude-haiku-4-5-20251001' %}selected{% endif %}>Claude Haiku 4.5 — paid</option>
                     </select>
-                    <p class="text-xs text-gray-400 mt-1">Free models work well for email writing.</p>
                 </div>
             </div>
         </div>
 
-        <!-- Gemini direct -->
-        <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100">
+        <!-- ── Gemini Direct ──────────────────────────────────── -->
+        <div class="bg-white rounded-xl border shadow-sm overflow-hidden
+            {% if gemini_key %}border-blue-200{% else %}border-gray-100{% endif %}">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <div class="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
                     </div>
                     <div>
-                        <h2 class="text-sm font-semibold text-gray-700">Gemini API Key <span class="text-xs font-normal text-gray-400">(fallback)</span></h2>
-                        <p class="text-xs text-gray-400">Used if no OpenRouter key is set. Get a free key at aistudio.google.com.</p>
+                        <h2 class="text-sm font-semibold text-gray-700">Google Gemini Direct
+                            <span class="ml-1.5 text-xs font-normal px-1.5 py-0.5 rounded-full {% if gemini_key %}bg-blue-100 text-blue-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                {% if gemini_key %}configured{% else %}not set{% endif %}
+                            </span>
+                        </h2>
+                        <p class="text-xs text-gray-400">Fallback provider · Google AI Studio key · aistudio.google.com</p>
                     </div>
                 </div>
+                <span class="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded-md font-medium">Priority 2</span>
             </div>
-            <div class="px-6 py-5">
-                <label for="gemini_api_key" class="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
-                <input type="password" name="gemini_api_key" id="gemini_api_key"
-                    value="{{ gemini_key }}"
-                    placeholder="AIza…"
-                    title="Gemini API key"
-                    autocomplete="off"
-                    class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 font-mono">
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <label for="gemini_api_key" class="block text-sm font-medium text-gray-700 mb-1">Gemini API Key</label>
+                    <div class="relative">
+                        <input type="password" name="gemini_api_key" id="gemini_api_key"
+                            value="{{ gemini_key }}"
+                            placeholder="AIzaSy…"
+                            title="Google Gemini API key from aistudio.google.com"
+                            autocomplete="off"
+                            class="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-10 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 font-mono">
+                        <button type="button" onclick="toggleVis('gemini_api_key', this)" aria-label="Show/hide key"
+                            class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">Free quota: 1 500 req/day on gemini-2.0-flash · no credit card needed</p>
+                </div>
+                <div>
+                    <label for="gemini_model" class="block text-sm font-medium text-gray-700 mb-1">Model (direct Gemini API)</label>
+                    <select name="gemini_model" id="gemini_model" title="Gemini model to use for direct API calls"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300 bg-white">
+                        <option value="gemini-2.0-flash"                    {% if gemini_model == 'gemini-2.0-flash' %}selected{% endif %}>gemini-2.0-flash — free ⭐</option>
+                        <option value="gemini-2.5-flash-preview-05-20"      {% if gemini_model == 'gemini-2.5-flash-preview-05-20' %}selected{% endif %}>gemini-2.5-flash-preview-05-20 — free (latest)</option>
+                        <option value="gemini-2.0-flash-lite"               {% if gemini_model == 'gemini-2.0-flash-lite' %}selected{% endif %}>gemini-2.0-flash-lite — free, fastest</option>
+                        <option value="gemini-1.5-flash"                    {% if gemini_model == 'gemini-1.5-flash' %}selected{% endif %}>gemini-1.5-flash — free, stable</option>
+                        <option value="gemini-1.5-pro"                      {% if gemini_model == 'gemini-1.5-pro' %}selected{% endif %}>gemini-1.5-pro — free tier limited</option>
+                    </select>
+                    <p class="text-xs text-gray-400 mt-1">Uses Google's native v1beta API with JSON output mode.</p>
+                </div>
             </div>
         </div>
 
-        <!-- AI test -->
+        <!-- ── Live test ──────────────────────────────────────── -->
         <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-            <div class="px-6 py-4 border-b border-gray-100">
-                <h2 class="text-sm font-semibold text-gray-700">Test AI</h2>
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 class="text-sm font-semibold text-gray-700">Live Test</h2>
+                <span id="provider-badge" class="text-xs text-gray-400"></span>
             </div>
             <div class="px-6 py-5 space-y-3">
-                <p class="text-xs text-gray-400">Save your key first, then test it here.</p>
+                <p class="text-xs text-gray-400">Save your key first, then test — the active provider will respond.</p>
                 <div class="flex gap-2">
-                    <input type="text" id="test-prompt" placeholder="Write a welcome email for a SaaS product" title="Test AI prompt"
+                    <input type="text" id="test-prompt"
+                        placeholder="e.g. Summer sale email, 20% off, urgent tone"
+                        title="Describe the email to generate"
                         class="flex-1 border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    <button type="button" onclick="testAI()" class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium">Test</button>
+                    <button type="button" onclick="testAI()" id="test-btn"
+                        class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap">
+                        Test AI
+                    </button>
                 </div>
-                <pre id="test-result" class="hidden text-xs text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap max-h-48 overflow-y-auto"></pre>
+                <div id="test-result-wrap" class="hidden space-y-2">
+                    <div class="flex items-center gap-2">
+                        <span id="test-provider-label" class="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600"></span>
+                        <span class="text-xs text-gray-400" id="test-timing"></span>
+                    </div>
+                    <pre id="test-result" class="text-xs text-gray-700 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap max-h-56 overflow-y-auto border border-gray-100"></pre>
+                </div>
             </div>
         </div>
 
@@ -105,22 +180,58 @@
 
 {% block extra_scripts %}
 <script>
+function toggleVis(id, btn) {
+    const inp = document.getElementById(id);
+    const showing = inp.type === 'text';
+    inp.type = showing ? 'password' : 'text';
+    btn.style.opacity = showing ? '1' : '0.5';
+}
+
 async function testAI() {
     const prompt = document.getElementById('test-prompt').value.trim();
-    if (!prompt) return;
-    const resultEl = document.getElementById('test-result');
-    resultEl.classList.remove('hidden');
-    resultEl.textContent = 'Generating…';
+    if (!prompt) { document.getElementById('test-prompt').focus(); return; }
+
+    const btn = document.getElementById('test-btn');
+    const wrap = document.getElementById('test-result-wrap');
+    const result = document.getElementById('test-result');
+    const provLabel = document.getElementById('test-provider-label');
+    const timing = document.getElementById('test-timing');
+
+    btn.disabled = true;
+    btn.textContent = 'Testing…';
+    wrap.classList.remove('hidden');
+    result.textContent = 'Connecting…';
+    provLabel.textContent = '';
+    timing.textContent = '';
+
     const fd = new FormData();
     fd.append('prompt', prompt);
     fd.append('field', 'both');
+
+    const t0 = Date.now();
     try {
         const res = await fetch('/ai/generate', { method: 'POST', body: fd });
         const data = await res.json();
-        if (data.error) { resultEl.textContent = 'Error: ' + data.error; return; }
-        resultEl.textContent = 'SUBJECT: ' + (data.subject || '—') + '\n\nBODY:\n' + (data.body || '—');
+        const elapsed = ((Date.now() - t0) / 1000).toFixed(1);
+        timing.textContent = elapsed + 's';
+
+        if (data.error) {
+            result.textContent = '✗ ' + data.error;
+            provLabel.textContent = 'Error';
+            provLabel.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600';
+        } else {
+            result.textContent = 'SUBJECT:\n' + (data.subject || '—') + '\n\nBODY:\n' + (data.body || '—');
+            provLabel.textContent = '{{ active_provider }}';
+            provLabel.className = 'text-xs font-medium px-2 py-0.5 rounded-full ' +
+                ('{{ active_provider }}' === 'openrouter' ? 'bg-indigo-100 text-indigo-700' : 'bg-blue-100 text-blue-700');
+        }
     } catch (e) {
-        resultEl.textContent = 'Request failed: ' + e.message;
+        result.textContent = 'Network error: ' + e.message;
+        provLabel.textContent = 'Error';
+        provLabel.className = 'text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-600';
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Test AI';
     }
 }
 

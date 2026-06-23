@@ -135,7 +135,7 @@ async def new_campaign(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     smtp_accounts = db.query(SMTPAccount).filter(SMTPAccount.user_id == user.id, SMTPAccount.is_active == True).all()
     contact_bases = db.query(ContactBase).filter(ContactBase.user_id == user.id).all()
-    has_openrouter = bool(get_user_setting(db, user.id, "openrouter_api_key"))
+    has_openrouter = bool(get_user_setting(db, user.id, "openrouter_api_key") or get_user_setting(db, user.id, "gemini_api_key"))
     return templates.TemplateResponse("campaign_new.html", {
         "request": request, "user": user,
         "smtp_accounts": smtp_accounts,
@@ -190,7 +190,7 @@ async def edit_campaign_page(request: Request, campaign_id: int, db: Session = D
     smtp_accounts = db.query(SMTPAccount).filter(SMTPAccount.user_id == user.id, SMTPAccount.is_active == True).all()
     contact_bases = db.query(ContactBase).filter(ContactBase.user_id == user.id).all()
     selected_smtp_ids = [cs.smtp_account_id for cs in campaign.smtp_accounts]
-    has_openrouter = bool(get_user_setting(db, user.id, "openrouter_api_key"))
+    has_openrouter = bool(get_user_setting(db, user.id, "openrouter_api_key") or get_user_setting(db, user.id, "gemini_api_key"))
     return templates.TemplateResponse("campaign_edit.html", {
         "request": request, "user": user, "campaign": campaign,
         "smtp_accounts": smtp_accounts,
@@ -756,13 +756,22 @@ async def delete_contact_base(request: Request, base_id: int, db: Session = Depe
 async def settings_page(request: Request, db: Session = Depends(get_db)):
     user = get_current_user(request, db)
     openrouter_key = get_user_setting(db, user.id, "openrouter_api_key")
-    gemini_key = get_user_setting(db, user.id, "gemini_api_key")
-    ai_model = get_user_setting(db, user.id, "ai_model", "google/gemini-2.0-flash-exp:free")
+    gemini_key     = get_user_setting(db, user.id, "gemini_api_key")
+    ai_model       = get_user_setting(db, user.id, "ai_model",    "google/gemini-2.0-flash-exp:free")
+    gemini_model   = get_user_setting(db, user.id, "gemini_model", "gemini-2.0-flash")
+    # Determine which provider will actually be used
+    active_provider = "none"
+    if openrouter_key:
+        active_provider = "openrouter"
+    elif gemini_key:
+        active_provider = "gemini"
     return templates.TemplateResponse("settings.html", {
         "request": request, "user": user,
         "openrouter_key": openrouter_key,
         "gemini_key": gemini_key,
         "ai_model": ai_model,
+        "gemini_model": gemini_model,
+        "active_provider": active_provider,
     })
 
 @app.post("/settings")
@@ -771,6 +780,7 @@ async def save_settings(
     openrouter_api_key: str = Form(""),
     gemini_api_key: str = Form(""),
     ai_model: str = Form("google/gemini-2.0-flash-exp:free"),
+    gemini_model: str = Form("gemini-2.0-flash"),
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
@@ -783,10 +793,88 @@ async def save_settings(
             db.add(AppSetting(user_id=user.id, key=key, value=value))
 
     upsert_setting("openrouter_api_key", openrouter_api_key)
-    upsert_setting("gemini_api_key", gemini_api_key)
-    upsert_setting("ai_model", ai_model)
+    upsert_setting("gemini_api_key",     gemini_api_key)
+    upsert_setting("ai_model",           ai_model)
+    upsert_setting("gemini_model",       gemini_model)
     db.commit()
     return RedirectResponse(url="/settings?saved=1", status_code=status.HTTP_302_FOUND)
+
+
+# --- AI helpers ---
+
+def _build_ai_messages(prompt: str, field: str) -> tuple[str, str]:
+    user_msg = f"Write a professional marketing email. Context: {prompt}"
+    if field == "subject":
+        system_msg = (
+            "You are an expert email copywriter. "
+            "Return ONLY a valid JSON object with a single key 'subject' "
+            "containing a compelling, concise email subject line. No markdown, no explanation."
+        )
+    elif field == "body":
+        system_msg = (
+            "You are an expert email copywriter. "
+            "Return ONLY a valid JSON object with a single key 'body' "
+            "containing a professional plain-text email body. "
+            "Use {name} as the personalization placeholder. No markdown, no explanation."
+        )
+    else:
+        system_msg = (
+            "You are an expert email marketing copywriter. "
+            "Return ONLY a valid JSON object with exactly two keys: "
+            "'subject' (a compelling subject line) and "
+            "'body' (a professional plain-text email body using {name} for personalization). "
+            "No markdown, no explanation, no extra keys."
+        )
+    return system_msg, user_msg
+
+async def _call_openrouter(api_key: str, model: str, system_msg: str, user_msg: str) -> dict:
+    """OpenAI-compatible call via OpenRouter."""
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://erosmail.app",
+                "X-Title": "ErosMail",
+            },
+            json={
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_msg},
+                    {"role": "user", "content": user_msg},
+                ],
+                "response_format": {"type": "json_object"},
+            },
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        content = resp.json()["choices"][0]["message"]["content"]
+        return json.loads(content)
+
+async def _call_gemini_direct(api_key: str, model: str, system_msg: str, user_msg: str) -> dict:
+    """Google Generative Language API v1beta with JSON output mode."""
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            url,
+            params={"key": api_key},
+            json={
+                "system_instruction": {
+                    "parts": [{"text": system_msg}]
+                },
+                "contents": [
+                    {"role": "user", "parts": [{"text": user_msg}]}
+                ],
+                "generationConfig": {
+                    "response_mime_type": "application/json"
+                },
+            },
+            timeout=30.0,
+        )
+        resp.raise_for_status()
+        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
+        return json.loads(text)
 
 
 # --- AI Generate ---
@@ -798,50 +886,40 @@ async def ai_generate(
     db: Session = Depends(get_db)
 ):
     user = get_current_user(request, db)
-    api_key = get_user_setting(db, user.id, "openrouter_api_key")
-    if not api_key:
-        api_key = get_user_setting(db, user.id, "gemini_api_key")
-        if not api_key:
-            return JSONResponse({"error": "No API key configured. Go to Settings."}, status_code=400)
-        # Use Gemini directly
-        model = "google/gemini-2.0-flash-exp:free"
-    else:
-        model = get_user_setting(db, user.id, "ai_model", "google/gemini-2.0-flash-exp:free")
+    or_key  = get_user_setting(db, user.id, "openrouter_api_key")
+    gem_key = get_user_setting(db, user.id, "gemini_api_key")
 
-    system_msg = "You are an expert email marketing copywriter. Return ONLY a JSON object with keys 'subject' and 'body'. The body should be plain text suitable for email, personalized with {name} placeholder."
-    user_msg = f"Write a professional marketing email. Context: {prompt}"
-    if field == "subject":
-        system_msg = "You are an expert email copywriter. Return ONLY a JSON object with key 'subject' containing a compelling email subject line."
-    elif field == "body":
-        system_msg = "You are an expert email copywriter. Return ONLY a JSON object with key 'body' containing a professional email body. Use {name} for personalization."
+    if not or_key and not gem_key:
+        return JSONResponse(
+            {"error": "No AI key configured. Go to Settings and add an OpenRouter or Gemini API key."},
+            status_code=400,
+        )
 
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.post(
-                "https://openrouter.ai/api/v1/chat/completions",
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                    "HTTP-Referer": "https://erosmail.app",
-                    "X-Title": "ErosMail"
-                },
-                json={
-                    "model": model,
-                    "messages": [
-                        {"role": "system", "content": system_msg},
-                        {"role": "user", "content": user_msg}
-                    ],
-                    "response_format": {"type": "json_object"}
-                },
-                timeout=30.0
-            )
-            response.raise_for_status()
-            data = response.json()
-            content = data["choices"][0]["message"]["content"]
-            result = json.loads(content)
+    system_msg, user_msg = _build_ai_messages(prompt, field)
+    errors: list[str] = []
+
+    # 1. Try OpenRouter first (if key is present)
+    if or_key:
+        or_model = get_user_setting(db, user.id, "ai_model", "google/gemini-2.0-flash-exp:free")
+        try:
+            result = await _call_openrouter(or_key, or_model, system_msg, user_msg)
             return JSONResponse(result)
-    except Exception as e:
-        return JSONResponse({"error": f"AI generation failed: {str(e)}"}, status_code=500)
+        except Exception as e:
+            errors.append(f"OpenRouter ({or_model}): {e}")
+
+    # 2. Fall back to Gemini direct API
+    if gem_key:
+        gem_model = get_user_setting(db, user.id, "gemini_model", "gemini-2.0-flash")
+        try:
+            result = await _call_gemini_direct(gem_key, gem_model, system_msg, user_msg)
+            return JSONResponse(result)
+        except Exception as e:
+            errors.append(f"Gemini direct ({gem_model}): {e}")
+
+    return JSONResponse(
+        {"error": "All AI providers failed — " + " | ".join(errors)},
+        status_code=500,
+    )
 
 
 # --- Reports ---
