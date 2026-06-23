@@ -10,38 +10,18 @@
     <meta property="og:description" content="Professional email campaign platform">
     <meta property="og:type" content="website">
     <meta property="og:image" content="/static/logo.png">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="theme-color" content="#111827">
     <link rel="icon" type="image/png" href="/static/logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        brand: {
-                            50: '#f5f5f5',
-                            100: '#e8e8e8',
-                            200: '#d0d0d0',
-                            500: '#666666',
-                            800: '#1a1a1a',
-                            900: '#0d0d0d',
-                        }
-                    },
-                    fontFamily: {
-                        sans: ['"Inter"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'sans-serif'],
-                    }
-                }
-            }
-        }
-    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * { box-sizing: border-box; }
         body { font-family: 'Inter', -apple-system, sans-serif; }
 
+        /* ── Animations ── */
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(16px); }
+            from { opacity: 0; transform: translateY(14px); }
             to   { opacity: 1; transform: translateY(0); }
         }
         @keyframes fadeIn {
@@ -49,228 +29,357 @@
             to   { opacity: 1; }
         }
         @keyframes slideInRight {
-            from { opacity: 0; transform: translateX(20px); }
+            from { opacity: 0; transform: translateX(18px); }
             to   { opacity: 1; transform: translateX(0); }
         }
-        @keyframes pulse-subtle {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-        @keyframes logoEntrance {
-            0%   { opacity: 0; transform: scale(0.92); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-
-        .animate-fade-in-up  { will-change: transform, opacity; animation: fadeInUp 0.45s ease both; }
-        .animate-fade-in     { will-change: opacity; animation: fadeIn 0.35s ease both; }
-        .animate-slide-right { will-change: transform, opacity; animation: slideInRight 0.4s ease both; }
-        .animate-logo        { will-change: transform, opacity; animation: logoEntrance 0.6s cubic-bezier(0.16,1,0.3,1) both; }
-
-        .delay-100 { animation-delay: 0.1s; }
+        .animate-fade-in-up  { will-change: transform, opacity; animation: fadeInUp 0.4s ease both; }
+        .animate-fade-in     { will-change: opacity; animation: fadeIn 0.3s ease both; }
+        .animate-slide-right { will-change: transform, opacity; animation: slideInRight 0.35s ease both; }
+        .delay-100 { animation-delay: 0.10s; }
         .delay-150 { animation-delay: 0.15s; }
-        .delay-200 { animation-delay: 0.2s; }
-        .delay-300 { animation-delay: 0.3s; }
+        .delay-200 { animation-delay: 0.20s; }
+        .delay-300 { animation-delay: 0.30s; }
 
-        .nav-link {
-            position: relative;
-            transition: color 0.2s;
+        /* ── Sidebar ── */
+        #sidebar {
+            width: 240px;
+            min-height: 100vh;
+            background: #111827;
+            display: flex;
+            flex-direction: column;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
         }
-        .nav-link::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 0;
-            height: 2px;
-            background: #1a1a1a;
-            transition: width 0.25s cubic-bezier(0.4,0,0.2,1);
+        .sidebar-logo {
+            padding: 20px 20px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
         }
-        .nav-link:hover::after,
-        .nav-link.active::after { width: 100%; }
-        .nav-link.active { color: #1a1a1a; font-weight: 600; }
+        .sidebar-logo img {
+            height: 32px;
+            width: auto;
+            display: block;
+        }
+        .sidebar-nav { padding: 12px 10px; flex: 1; }
+        .sidebar-link {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+            color: rgba(255,255,255,0.55);
+            text-decoration: none;
+            transition: background 0.15s, color 0.15s;
+            margin-bottom: 2px;
+        }
+        .sidebar-link:hover {
+            background: rgba(255,255,255,0.07);
+            color: rgba(255,255,255,0.9);
+        }
+        .sidebar-link.active {
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+        }
+        .sidebar-link svg { flex-shrink: 0; opacity: 0.7; }
+        .sidebar-link.active svg { opacity: 1; }
+        .sidebar-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.08);
+            margin: 8px 10px;
+        }
+        .sidebar-bottom {
+            padding: 12px 10px;
+            border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .sidebar-user {
+            padding: 8px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar-avatar {
+            width: 28px; height: 28px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; font-weight: 600; color: #fff; flex-shrink: 0;
+        }
 
-        .card-hover {
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        /* ── Page shell ── */
+        #page-shell {
+            display: flex;
+            min-height: 100vh;
         }
-        .card-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+        #main-area {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            background: #f9fafb;
+        }
+        #topbar {
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 0 24px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-shrink: 0;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+        #page-content {
+            flex: 1;
+            padding: 28px 28px;
+            max-width: 1200px;
+            width: 100%;
         }
 
+        /* ── Buttons ── */
         .btn-primary {
-            background: #1a1a1a;
+            background: #111827;
             color: white;
-            transition: background 0.2s, transform 0.1s;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: background 0.15s, transform 0.1s;
+            cursor: pointer;
         }
-        .btn-primary:hover { background: #333; }
+        .btn-primary:hover  { background: #1f2937; }
         .btn-primary:active { transform: scale(0.98); }
 
         .btn-ghost {
             background: transparent;
-            border: 1.5px solid #d0d0d0;
-            color: #1a1a1a;
-            transition: background 0.2s, border-color 0.2s;
+            border: 1.5px solid #d1d5db;
+            color: #111827;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: background 0.15s, border-color 0.15s;
+            cursor: pointer;
         }
-        .btn-ghost:hover { background: #f5f5f5; border-color: #999; }
+        .btn-ghost:hover { background: #f3f4f6; border-color: #9ca3af; }
 
-        .status-sent     { background: #dcfce7; color: #15803d; }
-        .status-failed   { background: #fee2e2; color: #dc2626; }
-        .status-draft    { background: #f3f4f6; color: #6b7280; }
-        .status-sending  { background: #fef9c3; color: #a16207; }
-        .status-scheduled{ background: #dbeafe; color: #1d4ed8; }
-        .status-completed{ background: #dcfce7; color: #15803d; }
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+            border-radius: 8px;
+            font-size: 13.5px;
+            font-weight: 500;
+            transition: background 0.15s;
+            cursor: pointer;
+        }
+        .btn-danger:hover { background: #dc2626; }
 
+        /* ── Status badges ── */
+        .status-sent      { background: #dcfce7; color: #15803d; }
+        .status-failed    { background: #fee2e2; color: #dc2626; }
+        .status-draft     { background: #f3f4f6; color: #6b7280; }
+        .status-sending   { background: #fef9c3; color: #a16207; }
+        .status-scheduled { background: #dbeafe; color: #1d4ed8; }
+        .status-completed { background: #dcfce7; color: #15803d; }
+
+        /* ── Table rows ── */
         .checkbox-row:hover { background: #fafafa; }
+        input[type="checkbox"]:checked { accent-color: #111827; }
 
+        /* ── Cards ── */
+        .card-hover {
+            transition: transform 0.18s ease, box-shadow 0.18s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+        }
+
+        /* ── Progress bars ── */
+        .progress-fill {
+            width: var(--progress-width, 0%);
+            transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
+            background: linear-gradient(90deg, #111827 0%, #374151 100%);
+        }
+
+        /* ── Toast ── */
         .toast {
             position: fixed;
             bottom: 24px; right: 24px;
-            background: #1a1a1a;
+            background: #111827;
             color: white;
             padding: 12px 20px;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: 10px;
+            font-size: 13.5px;
             z-index: 9999;
             animation: slideInRight 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.18);
         }
+        .toast.error { background: #dc2626; }
 
-        .mobile-menu { display: none; }
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
+
+        /* ── Mobile ── */
         @media (max-width: 768px) {
-            .desktop-nav { display: none; }
-            .mobile-menu-btn { display: flex; }
-            .mobile-menu.open { display: flex; }
+            #sidebar { display: none; width: 0; }
+            #sidebar.open {
+                display: flex;
+                position: fixed;
+                top: 0; left: 0;
+                z-index: 200;
+                height: 100%;
+                animation: slideInRight 0.25s ease;
+            }
+            #sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 199; }
+            #sidebar-overlay.open { display: block; }
+            #mobile-menu-btn { display: flex; }
         }
-
-        input[type="checkbox"]:checked {
-            accent-color: #1a1a1a;
+        @media (min-width: 769px) {
+            #mobile-menu-btn { display: none; }
         }
-
-        .progress-bar-animated {
-            transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
-            background: linear-gradient(90deg, #1a1a1a 0%, #444 100%);
-        }
-
-        .logo-img {
-            height: 28px;
-            width: auto;
-            filter: brightness(0);
-        }
-
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #999; }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
-<body class="bg-gray-50 text-gray-900 min-h-screen flex flex-col">
+<body class="bg-gray-50 text-gray-900">
 
-    {% if user %}
-    <header class="bg-white border-b border-gray-200 sticky top-0 z-50 animate-fade-in">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between items-center h-14">
-                <!-- Logo -->
-                <a href="/dashboard" class="flex-shrink-0 flex items-center animate-logo">
-                    <img src="/static/logo.png" alt="ErosMail" class="logo-img">
-                </a>
+{% if user %}
+<div id="page-shell">
 
-                <!-- Desktop Nav -->
-                <nav class="desktop-nav hidden sm:flex sm:items-center sm:space-x-6">
-                    <a href="/dashboard" class="nav-link text-sm text-gray-500 {% if request.url.path == '/dashboard' %}active{% endif %}">Dashboard</a>
-                    <a href="/campaign/new" class="nav-link text-sm text-gray-500 {% if request.url.path == '/campaign/new' %}active{% endif %}">New Campaign</a>
-                    <a href="/contacts" class="nav-link text-sm text-gray-500 {% if '/contacts' in request.url.path %}active{% endif %}">Contacts</a>
-                    <a href="/smtp" class="nav-link text-sm text-gray-500 {% if request.url.path == '/smtp' %}active{% endif %}">SMTP</a>
-                    <a href="/reports" class="nav-link text-sm text-gray-500 {% if request.url.path == '/reports' %}active{% endif %}">Reports</a>
-                    <a href="/logs" class="nav-link text-sm text-gray-500 {% if request.url.path == '/logs' %}active{% endif %}">Logs</a>
-                </nav>
+    <!-- ── Sidebar overlay (mobile) ── -->
+    <div id="sidebar-overlay" onclick="closeSidebar()"></div>
 
-                <!-- Right side -->
-                <div class="flex items-center space-x-3">
-                    <a href="/settings" class="text-gray-400 hover:text-gray-700 transition-colors" title="Settings">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                        </svg>
-                    </a>
-                    <span class="text-xs text-gray-400 hidden sm:block">{{ user.username }}</span>
-                    <a href="/logout" class="text-xs text-red-500 hover:text-red-700 font-medium transition-colors">Logout</a>
-                    <!-- Mobile hamburger -->
-                    <button type="button" aria-label="Open navigation menu" class="mobile-menu-btn sm:hidden flex items-center text-gray-500" onclick="toggleMobileMenu()">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                    </button>
+    <!-- ── Sidebar ── -->
+    <aside id="sidebar">
+        <div class="sidebar-logo">
+            <a href="/dashboard">
+                <img src="/static/logo.png" alt="ErosMail">
+            </a>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="/dashboard" class="sidebar-link {% if request.url.path == '/dashboard' %}active{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+                Dashboard
+            </a>
+            <a href="/campaign/new" class="sidebar-link {% if request.url.path == '/campaign/new' %}active{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                New Campaign
+            </a>
+            <a href="/contacts" class="sidebar-link {% if '/contacts' in request.url.path %}active{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Contacts
+            </a>
+            <a href="/smtp" class="sidebar-link {% if request.url.path == '/smtp' %}active{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M12 5l7 7-7 7"/></svg>
+                SMTP Accounts
+            </a>
+
+            <div class="sidebar-divider"></div>
+
+            <a href="/reports" class="sidebar-link {% if request.url.path == '/reports' %}active{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                Reports
+            </a>
+            <a href="/logs" class="sidebar-link {% if request.url.path == '/logs' %}active{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                Email Logs
+            </a>
+
+            <div class="sidebar-divider"></div>
+
+            <a href="/settings" class="sidebar-link {% if request.url.path == '/settings' %}active{% endif %}">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                Settings
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="sidebar-user">
+                <div class="sidebar-avatar">{{ user.username[0].upper() }}</div>
+                <div class="min-w-0">
+                    <p class="text-xs font-medium text-white truncate">{{ user.username }}</p>
+                    <a href="/logout" class="text-xs text-red-400 hover:text-red-300 transition-colors">Logout</a>
                 </div>
             </div>
         </div>
-        <!-- Mobile menu -->
-        <div id="mobile-menu" class="mobile-menu flex-col border-t border-gray-100 bg-white sm:hidden px-4 py-3 space-y-2">
-            <a href="/dashboard" class="block py-2 text-sm text-gray-700">Dashboard</a>
-            <a href="/campaign/new" class="block py-2 text-sm text-gray-700">New Campaign</a>
-            <a href="/contacts" class="block py-2 text-sm text-gray-700">Contacts</a>
-            <a href="/smtp" class="block py-2 text-sm text-gray-700">SMTP Accounts</a>
-            <a href="/reports" class="block py-2 text-sm text-gray-700">Reports</a>
-            <a href="/logs" class="block py-2 text-sm text-gray-700">Logs</a>
-            <a href="/settings" class="block py-2 text-sm text-gray-700">Settings</a>
-        </div>
-    </header>
-    {% endif %}
+    </aside>
 
-    <main class="flex-grow">
-        <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <!-- ── Main area ── -->
+    <div id="main-area">
+        <!-- Topbar (mobile hamburger + page title slot) -->
+        <div id="topbar">
+            <button type="button" id="mobile-menu-btn" onclick="openSidebar()" aria-label="Open navigation menu"
+                class="flex items-center text-gray-500 hover:text-gray-800 transition-colors mr-3">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <span class="text-sm font-medium text-gray-500">{% block page_title %}{% endblock %}</span>
+            <div class="flex items-center gap-3 ml-auto">
+                <a href="/campaign/new" class="btn-primary px-4 py-2 text-xs hidden sm:inline-flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                    New Campaign
+                </a>
+            </div>
+        </div>
+
+        <!-- Page content -->
+        <div id="page-content" class="animate-fade-in">
             {% block content %}{% endblock %}
         </div>
-    </main>
+    </div>
 
-    <footer class="bg-white border-t border-gray-100 mt-auto">
-        <div class="max-w-7xl mx-auto py-3 px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-            <img src="/static/logo.png" alt="ErosMail" class="h-5 w-auto opacity-30">
-            <p class="text-xs text-gray-400">Professional Email Campaign Manager</p>
-        </div>
-    </footer>
+</div>
+{% else %}
+    {% block content %}{% endblock %}
+{% endif %}
 
-    <div id="toast-container"></div>
+<div id="toast-container"></div>
 
-    <script>
-        function toggleMobileMenu() {
-            const m = document.getElementById('mobile-menu');
-            m.classList.toggle('open');
+<script>
+    function openSidebar() {
+        document.getElementById('sidebar').classList.add('open');
+        document.getElementById('sidebar-overlay').classList.add('open');
+    }
+    function closeSidebar() {
+        document.getElementById('sidebar').classList.remove('open');
+        document.getElementById('sidebar-overlay').classList.remove('open');
+    }
+
+    function showToast(msg, type) {
+        const t = document.createElement('div');
+        t.className = 'toast' + (type === 'error' ? ' error' : '');
+        t.textContent = msg;
+        document.getElementById('toast-container').appendChild(t);
+        setTimeout(() => t.remove(), 3500);
+    }
+
+    function toggleAllCheckboxes(source, name) {
+        document.querySelectorAll(`input[name="${name}"]`).forEach(b => b.checked = source.checked);
+        updateBulkBar();
+    }
+
+    function updateBulkBar() {
+        const checked = document.querySelectorAll('.row-check:checked').length;
+        const bar = document.getElementById('bulk-action-bar');
+        const cnt = document.getElementById('bulk-selected-count');
+        if (bar) {
+            bar.classList.toggle('hidden', checked === 0);
+            if (cnt) cnt.textContent = checked;
         }
+    }
 
-        function showToast(msg, type='success') {
-            const t = document.createElement('div');
-            t.className = 'toast';
-            if (type === 'error') t.style.background = '#dc2626';
-            t.textContent = msg;
-            document.getElementById('toast-container').appendChild(t);
-            setTimeout(() => t.remove(), 3500);
-        }
-
-        // Select all checkbox helper
-        function toggleAllCheckboxes(source, name) {
-            const boxes = document.querySelectorAll(`input[name="${name}"]`);
-            boxes.forEach(b => b.checked = source.checked);
-            updateBulkBar();
-        }
-
-        function updateBulkBar() {
-            const checked = document.querySelectorAll('.row-check:checked').length;
-            const bar = document.getElementById('bulk-action-bar');
-            const cnt = document.getElementById('bulk-selected-count');
-            if (bar) {
-                if (checked > 0) {
-                    bar.classList.remove('hidden');
-                    if (cnt) cnt.textContent = checked;
-                } else {
-                    bar.classList.add('hidden');
-                }
-            }
-        }
-
-        document.addEventListener('change', function(e) {
-            if (e.target.classList.contains('row-check')) updateBulkBar();
-        });
-    </script>
-    {% block extra_scripts %}{% endblock %}
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('row-check')) updateBulkBar();
+    });
+</script>
+{% block extra_scripts %}{% endblock %}
 </body>
 </html>
