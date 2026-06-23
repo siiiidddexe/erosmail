@@ -833,8 +833,32 @@ def _build_ai_messages(prompt: str, field: str) -> tuple[str, str]:
         )
     return system_msg, user_msg
 
+# Ordered fallback lists — tried in sequence when the preferred model fails
+_OPENROUTER_FALLBACKS = [
+    "google/gemini-flash-1.5:free",
+    "google/gemini-2.0-flash-lite:free",
+    "meta-llama/llama-3.3-70b-instruct:free",
+    "mistralai/mistral-7b-instruct:free",
+    "deepseek/deepseek-chat:free",
+]
+_GEMINI_FALLBACKS = [
+    "gemini-2.0-flash-001",
+    "gemini-2.0-flash-lite",
+    "gemini-1.5-flash",
+    "gemini-1.5-flash-001",
+    "gemini-1.5-pro",
+]
+
+def _extract_json(text: str) -> dict:
+    """Parse JSON from model output, stripping markdown fences if present."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    return json.loads(text.strip())
+
 async def _call_openrouter(api_key: str, model: str, system_msg: str, user_msg: str) -> dict:
-    """OpenAI-compatible call via OpenRouter."""
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             "https://openrouter.ai/api/v1/chat/completions",
@@ -850,37 +874,29 @@ async def _call_openrouter(api_key: str, model: str, system_msg: str, user_msg: 
                     {"role": "system", "content": system_msg},
                     {"role": "user", "content": user_msg},
                 ],
-                "response_format": {"type": "json_object"},
             },
             timeout=30.0,
         )
         resp.raise_for_status()
         content = resp.json()["choices"][0]["message"]["content"]
-        return json.loads(content)
+        return _extract_json(content)
 
 async def _call_gemini_direct(api_key: str, model: str, system_msg: str, user_msg: str) -> dict:
-    """Google Generative Language API v1beta with JSON output mode."""
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     async with httpx.AsyncClient() as client:
         resp = await client.post(
             url,
             params={"key": api_key},
             json={
-                "system_instruction": {
-                    "parts": [{"text": system_msg}]
-                },
-                "contents": [
-                    {"role": "user", "parts": [{"text": user_msg}]}
-                ],
-                "generationConfig": {
-                    "response_mime_type": "application/json"
-                },
+                "system_instruction": {"parts": [{"text": system_msg}]},
+                "contents": [{"role": "user", "parts": [{"text": user_msg}]}],
+                "generationConfig": {"response_mime_type": "application/json"},
             },
             timeout=30.0,
         )
         resp.raise_for_status()
         text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-        return json.loads(text)
+        return _extract_json(text)
 
 
 # --- AI Generate ---
@@ -904,23 +920,27 @@ async def ai_generate(
     system_msg, user_msg = _build_ai_messages(prompt, field)
     errors: list[str] = []
 
-    # 1. Try OpenRouter first (if key is present)
+    # 1. OpenRouter — try preferred model then fallbacks
     if or_key:
-        or_model = get_user_setting(db, user.id, "ai_model", "google/gemini-2.0-flash-exp:free")
-        try:
-            result = await _call_openrouter(or_key, or_model, system_msg, user_msg)
-            return JSONResponse(result)
-        except Exception as e:
-            errors.append(f"OpenRouter ({or_model}): {e}")
+        preferred = get_user_setting(db, user.id, "ai_model", _OPENROUTER_FALLBACKS[0])
+        or_models = [preferred] + [m for m in _OPENROUTER_FALLBACKS if m != preferred]
+        for model in or_models:
+            try:
+                result = await _call_openrouter(or_key, model, system_msg, user_msg)
+                return JSONResponse(result)
+            except Exception as e:
+                errors.append(f"OpenRouter/{model}: {e}")
 
-    # 2. Fall back to Gemini direct API
+    # 2. Gemini direct — try preferred model then fallbacks
     if gem_key:
-        gem_model = get_user_setting(db, user.id, "gemini_model", "gemini-2.0-flash")
-        try:
-            result = await _call_gemini_direct(gem_key, gem_model, system_msg, user_msg)
-            return JSONResponse(result)
-        except Exception as e:
-            errors.append(f"Gemini direct ({gem_model}): {e}")
+        preferred = get_user_setting(db, user.id, "gemini_model", _GEMINI_FALLBACKS[0])
+        gem_models = [preferred] + [m for m in _GEMINI_FALLBACKS if m != preferred]
+        for model in gem_models:
+            try:
+                result = await _call_gemini_direct(gem_key, model, system_msg, user_msg)
+                return JSONResponse(result)
+            except Exception as e:
+                errors.append(f"Gemini/{model}: {e}")
 
     return JSONResponse(
         {"error": "All AI providers failed — " + " | ".join(errors)},
